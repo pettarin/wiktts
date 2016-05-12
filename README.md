@@ -35,7 +35,7 @@ This repository contains the following Python tools:
 $ git clone https://github.com/pettarin/wiktts.git
 ```
 
-2. Download the dump(s) you want to work on from [WikiMedia](https://dumps.wikimedia.org/backup-index.html):
+2. Download the dump(s) you want to work on from [Wikimedia Downloads](https://dumps.wikimedia.org/backup-index.html):
 
 ```bash
 $ cd wiktts
@@ -47,8 +47,10 @@ $ wget "https://dumps.wikimedia.org/enwiktionary/20160407/enwiktionary-20160407-
 
 Run the scripts mentioned above with ``--help`` for their manual, for example:
 
+```bash
 $ cd mwminer
 $ python mwminer.py --help
+```
 
 Please note that processing big MediaWiki dump files will take several minutes.
 (The ``mwsplitter`` and ``mwminer`` scripts have been optimized
@@ -69,5 +71,5 @@ See the [REFERENCES file](REFERENCES.md).
 
 ## Acknowledgments
 
-* Many thanks to [Dr. Tony Robinson](https://www.speechmatics.com/https://www.speechmatics.com/) for many useful discussions on this project.
+* Many thanks to [Dr. Tony Robinson](https://www.speechmatics.com/) for many useful discussions on this project.
 
