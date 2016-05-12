@@ -45,21 +45,9 @@ $ wget "https://dumps.wikimedia.org/enwiktionary/20160407/enwiktionary-20160407-
 
 ## Usage
 
-Run the scripts mentioned above with ``--help`` for their manual, for example:
+For ``mwsplitter`` and ``mwminer``: see [mwminer/README.md](mwminer/README.md)
 
-```bash
-$ cd mwminer
-$ python mwminer.py --help
-```
-
-Please note that processing big MediaWiki dump files will take several minutes.
-(The ``mwsplitter`` and ``mwminer`` scripts have been optimized
-for readability, improvability, and extensibility, not for fast processing.
-MediaWiki dumps are published monthly, after all!)
-
-It is advisible to store your intermediate results,
-for example the list of IPA strings extracted from a dump,
-into intermediate files.
+For TBW: see TBW
 
 ## License
 

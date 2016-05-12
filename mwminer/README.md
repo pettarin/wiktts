@@ -1,10 +1,46 @@
-# mwminer 
+# mwsplitter 
 
-Mine IPA strings from a MediaWiki dump file.
+Split a MediaWiki dump into multiple files.
 
 ## Input
 
 A MediaWiki dump file, either uncompressed (``.xml``) or compressed (``.xml.bz2``).
+
+## Output
+
+One or more XML files, containing a fixed number of MediaWiki pages each.
+
+## Usage
+
+```bash
+$ python mwsplitter.py DUMP.XML[.BZ2] [OPTIONS]
+```
+
+Example:
+
+```bash
+$ python mwsplitter.py itwiktionary-20160407-pages-meta-current.xml.bz2 --output-dir /tmp/out/ --ns 0 --pages-per-chunk 1000 --stats
+```
+
+### Options
+
+Invoke with ``--help`` to get the list of available options,
+including how to modify the output file:
+
+```bash
+$ python mwsplitter.py --help
+```
+
+
+
+
+# mwminer 
+
+Mine IPA strings from a MediaWiki dump.
+
+## Input
+
+A MediaWiki dump file, either uncompressed (``.xml``) or compressed (``.xml.bz2``), or a directory containing chunks (``.xml``).
 
 ## Output
 
@@ -31,7 +67,7 @@ converting to ASCII-IPA (Kirshenbaum), etc.
 ## Usage
 
 ```bash
-$ python mwminer.py PARSER DUMP.XML[.BZ2] [OPTIONS]
+$ python mwminer.py PARSER DUMP [OPTIONS]
 ```
 
 Example:
@@ -39,6 +75,15 @@ Example:
 ```bash
 $ python mwminer.py itwiktionary itwiktionary-20160407-pages-meta-current.xml.bz2 --output-file itwiktionary-20160407.txt
 ```
+
+Please note that processing big MediaWiki dump files will take several minutes.
+(The ``mwsplitter`` and ``mwminer`` scripts have been optimized
+for readability, improvability, and extensibility, not for fast processing.
+MediaWiki dumps are published monthly, after all!)
+
+It is advisible to store your intermediate results,
+for example the list of IPA strings extracted from a dump,
+into intermediate files.
 
 ### Options
 
