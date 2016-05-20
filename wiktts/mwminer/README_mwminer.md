@@ -1,51 +1,17 @@
-# mwsplitter 
-
-Split a MediaWiki dump into multiple files.
-
-## Input
-
-A MediaWiki dump file, either uncompressed (``.xml``) or compressed (``.xml.bz2``).
-
-## Output
-
-One or more XML files, containing a fixed number of MediaWiki pages each.
-
-## Usage
-
-```bash
-$ python mwsplitter.py DUMP.XML[.BZ2] [OPTIONS]
-```
-
-Example:
-
-```bash
-$ python mwsplitter.py itwiktionary-20160407-pages-meta-current.xml.bz2 --output-dir /tmp/out/ --ns 0 --pages-per-chunk 1000 --stats
-```
-
-### Options
-
-Invoke with ``--help`` to get the list of available options,
-including how to modify the output file:
-
-```bash
-$ python mwsplitter.py --help
-```
-
-
-
-
 # mwminer 
 
-Mine IPA strings from a MediaWiki dump.
+**Mine IPA strings from a MediaWiki dump.**
+
 
 ## Input
 
-A MediaWiki dump file, either uncompressed (``.xml``) or compressed (``.xml.bz2``), or a directory containing chunks (``.xml``).
+A **MediaWiki dump file**, either uncompressed (``.xml``) or compressed (``.xml.bz2``), or a directory containing chunks (``.xml``).
+
 
 ## Output
 
 An UTF-8 encoded file,
-containing one tab-separated pair
+containing one tab-separated triple
 ``ID\tword\tIPA``
 per line,
 where:
@@ -54,36 +20,29 @@ where:
 * ``word`` is the ``/mediawiki/page/title`` string, and
 * ``IPA`` is the IPA string mined for ``word``.
 
-The mined word string is not modified in any way.
+The mined **word string is not modified** in any way.
 
-The mined IPA string is modified only
+The mined **IPA string is modified** only
 by removing the leading and trailing ``/.../`` or ``[...]``.
 Hence, you might need to clean it further,
 depending on the intended application.
-For example, you might need to "normalize" it
-by replacing digrams with two letters (``/ʧ/`` => ``/tS/``),
-converting to ASCII-IPA (Kirshenbaum), etc.
+See the ``wiktts.ipacleaner`` module for details.
+
 
 ## Usage
 
 ```bash
-$ python mwminer.py PARSER DUMP [OPTIONS]
+$ python -m wiktts.mwminer PARSER DUMP [OPTIONS]
 ```
 
 Example:
 
 ```bash
-$ python mwminer.py itwiktionary itwiktionary-20160407-pages-meta-current.xml.bz2 --output-file itwiktionary-20160407.txt
+$ python -m wiktts.mwminer enwiktionary enwiktionary-20160407-pages-meta-current.xml.bz2 --output-file enwiktionary-20160407.txt
 ```
 
-Please note that processing big MediaWiki dump files will take several minutes.
-(The ``mwsplitter`` and ``mwminer`` scripts have been optimized
-for readability, improvability, and extensibility, not for fast processing.
-MediaWiki dumps are published monthly, after all!)
-
-It is advisible to store your intermediate results,
-for example the list of IPA strings extracted from a dump,
-into intermediate files.
+Please note that processing big MediaWiki dump files might take several minutes.
+The current code is not optimized for speed.
 
 ### Options
 
@@ -91,10 +50,13 @@ Invoke with ``--help`` to get the list of available options,
 including how to modify the output file:
 
 ```bash
-$ python mwminer.py --help
+$ python -m wiktts.mwminer --help
 ```
 
+
 ## IPA Parsers
+
+Currently available:
 
 * ``dawiktionary``: Danish Wiktionary (poor recall)
 * ``dewiktionary``: German Wiktionary
@@ -112,6 +74,8 @@ $ python mwminer.py --help
 * ``ptwiktionary``: Portuguese Wiktionary (poor recall, needs work to distinguish pt-pt and pt-br)
 * ``ruwiktionary``: Russian Wiktionary
 * ``svwiktionary``: Swedish Wiktionary (poor recall)
+
+### Adding A New Parser
 
 To support a new language (say, ``zz``):
 
@@ -138,7 +102,10 @@ Please note that a ``<page>`` might:
 8. combine audio and IPA string tags/templates;
 9. contain IPA strings with Unicode characters that are invalid IPA characters.
 
+
 ## Example
+
+Given the following dump for the Italian Wiktionary:
 
 ```xml
 <mediawiki xmlns="http://www.mediawiki.org/xml/export-0.10/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mediawiki.org/xml/export-0.10/ http://www.mediawiki.org/xml/export-0.10.xsd" version="0.10" xml:lang="it">
@@ -214,11 +181,19 @@ derivato dal latino ''[[liber]]''
 </mediawiki>
 ```
 
-produces (spaces added for clarity):
+invoking:
+
+```bash
+$ python -m wiktts.mwminer itwiktionary itwiktionary-20160407-pages-meta-current.xml.bz2 --output-file itwiktionary-20160407.txt
+```
+
+will produce (spaces added for clarity):
 
 ```
 ...
 778 \t libero \t 'libero
 ...
 ```
+
+
 

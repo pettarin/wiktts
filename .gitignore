@@ -1,6 +1,5 @@
 *.pyc
 __pycache__
-cleaner
-sound
+ipapy
 yyy
 zzz_*

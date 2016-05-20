@@ -18,7 +18,7 @@ import os
 import re
 import tempfile
 
-from commandlinetool import CommandLineTool
+from wiktts.commandlinetool import CommandLineTool
 
 __author__ = "Alberto Pettarin"
 __copyright__ = "Copyright 2016, Alberto Pettarin (www.albertopettarin.it)"

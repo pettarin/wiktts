@@ -10,12 +10,12 @@ from __future__ import division
 from __future__ import print_function
 import os
 
-from commandlinetool import CommandLineTool
-from mwdata import PLACEHOLDERS, MWData, format_mwdata, write_mwdata
-from mwsplitter import MWSplitter
-from mwparser import MWParser
-from mwipaextractor import MWIPAExtractor
-from mwminerstatus import MWMinerStatus
+from wiktts.commandlinetool import CommandLineTool
+from wiktts.mwminer.mwdata import PLACEHOLDERS, MWData, format_mwdata, write_mwdata
+from wiktts.mwminer.mwsplitter import MWSplitter
+from wiktts.mwminer.mwparser import MWParser
+from wiktts.mwminer.mwipaextractor import MWIPAExtractor
+from wiktts.mwminer.mwminerstatus import MWMinerStatus
 
 __author__ = "Alberto Pettarin"
 __copyright__ = "Copyright 2016, Alberto Pettarin (www.albertopettarin.it)"

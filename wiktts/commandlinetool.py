@@ -2,7 +2,7 @@
 # coding=utf-8
 
 """
-Command line utility
+wiktts command line utility
 """
 
 from __future__ import absolute_import

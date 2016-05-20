@@ -12,8 +12,8 @@ from __future__ import print_function
 import imp
 import os
 
-from mwdata import MWData, MWExtractionInfo
-from mwparser import MWParser
+from wiktts.mwminer.mwdata import MWData, MWExtractionInfo
+from wiktts.mwminer.mwparser import MWParser
 
 __author__ = "Alberto Pettarin"
 __copyright__ = "Copyright 2016, Alberto Pettarin (www.albertopettarin.it)"

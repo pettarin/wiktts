@@ -12,7 +12,7 @@ from lxml import etree
 import os
 import sys
 
-from mwpage import MWPage
+from wiktts.mwminer.mwpage import MWPage
 
 __author__ = "Alberto Pettarin"
 __copyright__ = "Copyright 2016, Alberto Pettarin (www.albertopettarin.it)"

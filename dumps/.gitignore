@@ -1,2 +1,4 @@
-*.xml
 *.bz2
+*.xml
+*.sh
+heads
