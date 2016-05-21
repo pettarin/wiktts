@@ -10,12 +10,13 @@ from __future__ import division
 from __future__ import print_function
 import os
 
+from wiktts import write_file
 from wiktts.commandlinetool import CommandLineTool
-from wiktts.mwminer.mwdata import PLACEHOLDERS, MWData, format_mwdata, write_mwdata
-from wiktts.mwminer.mwsplitter import MWSplitter
-from wiktts.mwminer.mwparser import MWParser
-from wiktts.mwminer.mwipaextractor import MWIPAExtractor
-from wiktts.mwminer.mwminerstatus import MWMinerStatus
+from wiktts.mw.data import PLACEHOLDERS, Data, format_mwdata
+from wiktts.mw.miner.ipaextractor import IPAExtractor
+from wiktts.mw.miner.minerstatus import MinerStatus
+from wiktts.mw.parser import Parser
+from wiktts.mw.splitter.splitter import Splitter
 
 __author__ = "Alberto Pettarin"
 __copyright__ = "Copyright 2016, Alberto Pettarin (www.albertopettarin.it)"
@@ -24,7 +25,7 @@ __version__ = "0.0.1"
 __email__ = "alberto@albertopettarin.it"
 __status__ = "Development"
 
-class MWMiner(CommandLineTool):
+class Miner(CommandLineTool):
 
     AP_DESCRIPTION = u"Extract IPA strings from a given MediaWiki dump file."
     AP_ARGUMENTS = [
@@ -89,9 +90,9 @@ class MWMiner(CommandLineTool):
             "help": "Print extraction results only for pages without IPA string"
         },
         {
-            "name": "--sort",
+            "name": "--no-sort",
             "action": "store_true",
-            "help": "Sort the extraction results"
+            "help": "Do not sort the extraction results"
         },
         {
             "name": "--stats",
@@ -104,16 +105,6 @@ class MWMiner(CommandLineTool):
             "type": str,
             "default": None,
             "help": "Format output according to this string (available placeholders: %s)" % ", ".join(PLACEHOLDERS)
-        },
-        {
-            "name": "--tsv",
-            "action": "store_true",
-            "help": "Shortcut --format \"{WORD}\\t{IPA}\""
-        },
-        {
-            "name": "--canonical",
-            "action": "store_true",
-            "help": "Shortcut --ns 0 --tsv --sort"
         },
     ]
 
@@ -133,29 +124,14 @@ class MWMiner(CommandLineTool):
         ns = self.vargs["ns"]
         show_progress = not self.vargs["hide_progress"]
         quiet = self.vargs["quiet"]
-        if self.vargs["all"]:
-            include_with = True
-            include_without = True
-        elif self.vargs["without"]:
-            include_with = False
-            include_without = True
-        else:
-            include_with = True
-            include_without = False
         print_stats = self.vargs["stats"] 
-        sort_results = self.vargs["sort"]
+        sort_results = not self.vargs["no_sort"]
         template = self.vargs["format"]
-        if self.vargs["tsv"]:
-            template = "{WORD}\t{IPA}"
-        if self.vargs["canonical"]:
-            ns = [0]
-            template = "{WORD}\t{IPA}"
-            sort_results = True
 
         # extract IPA strings
-        status = MWMinerStatus()
-        ipaext = MWIPAExtractor(ipa_parser_name=ipa_parser)
-        mwp = MWParser(full_parsing=False)
+        status = MinerStatus()
+        ipaext = IPAExtractor(ipa_parser_name=ipa_parser)
+        mwp = Parser(full_parsing=False)
         if from_dir:
             # read all XML files from the dump directory
             for root, dirs, files in os.walk(dump_path):
@@ -164,36 +140,51 @@ class MWMiner(CommandLineTool):
                     process_chunk(mwp.pages, status)
         else:
             # read from dump file, in chunks
-            mws = MWSplitter(dump_file_path=dump_path, pages_per_chunk=pages_per_chunk, ns=ns)
+            mws = Splitter(dump_file_path=dump_path, pages_per_chunk=pages_per_chunk, ns=ns)
             for mwchunk in mws.mwchunks:
                 mwp.parse_string(mwchunk.contents, append=False)
                 process_chunk(mwp.pages, status)
        
-        # format data
-        formatted_data = format_mwdata(
-            status.mwdata,
-            template=template,
-            dump_file_path=dump_path,
-            include_with=include_with,
-            include_without=include_without
-        )
-        if sort_results:
-            formatted_data = sorted(formatted_data)
+        # format data if file or stdout output should be produced
+        if (output_file_path is not None) or (not quiet):
+            # select the data to include in the output
+            if self.vargs["all"]:
+                include_with = True
+                include_without = True
+            elif self.vargs["without"]:
+                include_with = False
+                include_without = True
+            else:
+                include_with = True
+                include_without = False
+            # format data
+            formatted_data = format_mwdata(
+                status.mwdata,
+                template=template,
+                dump_file_path=dump_path,
+                include_with=include_with,
+                include_without=include_without
+            )
+            # sort if requested
+            if sort_results:
+                formatted_data = sorted(formatted_data)
+            # output as requested
+            if output_file_path is not None:
+                write_file(formatted_data, output_file_path)
+            if not quiet:
+                for d in formatted_data:
+                    print(d)
 
-        # output as requested
-        if output_file_path is not None:
-            write_mwdata(formatted_data, output_file_path)
-        if not quiet:
-            for d in formatted_data:
-                print(d)
+        # print statistics if requested
         if print_stats:
-            print("Pages Total:    %d" % status.pages_total)
-            print("Pages With IPA: %d (%s)" % (status.pages_with_ipa, status.percentage))
+            print("Pages")
+            print("  Total:    %d" % status.pages_total)
+            print("  With IPA: %d (%s)" % (status.pages_with_ipa, status.percentage))
 
 
 
 def main():
-    MWMiner().run()
+    Miner().run()
 
 if __name__ == "__main__":
     main()

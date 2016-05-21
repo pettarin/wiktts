@@ -8,7 +8,7 @@ TBW
 from __future__ import absolute_import
 from __future__ import print_function
 
-from wiktts.mwminer.mwminer import MWMiner
+from wiktts.mw.miner.miner import Miner
 
 __author__ = "Alberto Pettarin"
 __copyright__ = "Copyright 2016, Alberto Pettarin (www.albertopettarin.it)"
@@ -18,7 +18,7 @@ __email__ = "alberto@albertopettarin.it"
 __status__ = "Development"
 
 if __name__ == "__main__":
-    MWMiner().run()
+    Miner().run()
 
 
 

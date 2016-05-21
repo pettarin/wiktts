@@ -19,12 +19,12 @@ __version__ = "0.0.1"
 __email__ = "alberto@albertopettarin.it"
 __status__ = "Development"
 
-MWData = namedtuple("MWData", ["extracted", "id", "word", "ipa"]) 
+Data = namedtuple("Data", ["extracted", "id", "word", "ipa"]) 
 
-MWExtractionInfo = namedtuple("MWExtractionInfo", ["mwdata", "pages_total", "pages_with_ipa"])
+ExtractionInfo = namedtuple("ExtractionInfo", ["mwdata", "pages_total", "pages_with_ipa"])
 
-DEFAULT_FORMAT_BOTH = u"{FLAG}\t{ID}\t{WORD}\t{IPA}"
-DEFAULT_FORMAT_WITH = u"{ID}\t{WORD}\t{IPA}"
+DEFAULT_FORMAT_BOTH = u"{EXTRACTED}\t{WORD}\t{IPA}"
+DEFAULT_FORMAT_WITH = u"{WORD}\t{IPA}"
 DEFAULT_FORMAT_WITHOUT = u"{ID}\t{WORD}"
 
 PLACEHOLDERS = ["{ID}", "{WORD}", "{IPA}", "{EXTRACTED}", "{FILENAME}", "{FILEPATH}"]
@@ -65,8 +65,5 @@ def format_mwdata(data, template=None, dump_file_path=None, include_with=True, i
         FILEPATH=absolute_path
     ) for d in filtered_data]
 
-def write_mwdata(formatted_data, output_file_path):
-    with io.open(output_file_path, "w", encoding="utf-8") as output_file:
-        output_file.write(u"\n".join(formatted_data))
 
 

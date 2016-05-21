@@ -153,7 +153,7 @@ class IPACleaner(CommandLineTool):
             if not quiet:
                 for d in formatted_data:
                     print(d)
-        
+
         # print statistics if requested
         if print_stats:
             total = len(lexi)

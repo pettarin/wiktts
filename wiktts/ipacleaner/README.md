@@ -68,27 +68,46 @@ The current code is not optimized for speed.
 
 ### Options
 
-Invoke with ``--help`` to get the list of available options,
-including how to modify the output file:
+Invoke with ``--help`` to get the list of available options:
 
 ```bash
 $ python -m wiktts.ipacleaner --help
+
+usage: __main__.py [-h] [--output-file [OUTPUT_FILE]] [--format [FORMAT]]
+                   [--comment [COMMENT]] [--delimiter [DELIMITER]]
+                   [--word-index [WORD_INDEX]] [--ipa-index [IPA_INDEX]]
+                   [--sort] [--quiet] [--stats] [--all] [--invalid]
+                   lexicon
+
+Clean and normalize IPA strings mined from a MediaWiki dump file.
+
+positional arguments:
+  lexicon               Lexicon file
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --output-file [OUTPUT_FILE]
+                        Write output to file
+  --format [FORMAT]     Format output according to this string (available
+                        placeholders: {RVALID}, {CVALID}, {WORD}, {RIPA},
+                        {RCV}, {RCVS}, {RCVSL}, {RCVSLW}, {RCVSLWS}{CIPA},
+                        {CCV}, {CCVS}, {CCVSL}, {CCVSLW}, {CCVSLWS})
+  --comment [COMMENT]   Ignore lines in the lexicon file starting with this
+                        string (default: '#')
+  --delimiter [DELIMITER]
+                        Field delimiter of the lexicon file (default: '\t')
+  --word-index [WORD_INDEX]
+                        Field index of the word (default: 0)
+  --ipa-index [IPA_INDEX]
+                        Field index of the IPA string (default: 1)
+  --sort                Sort the results
+  --quiet               Do not print results to stdout
+  --stats               Print the number of words with valid and invalid IPA
+  --all                 Print results for all words (with or without valid IPA
+                        after cleaning)
+  --invalid             Print results for words with invalid IPA (after
+                        cleaning)
 ```
-
-The most important options are:
-
-* ``--quiet``: do not print output to stdout
-* ``--stats``: print statistics
-* ``--comment COMM``: lines of the lexicon file starting with COMM will be ignored (default: ``#``)
-* ``--delimiter DELIM``: use DELIM as the field delimiter of the lexicon file (default: ``\t``)
-* ``--word-index IDX``: the word field in the lexicon file is the ``IDX``-th (default: ``0``)
-* ``--ipa-index IDX``: the IPA field in the lexicon file is the ``IDX``-th (default: ``1``)
-* ``--all``: output (word, cleaned+normalized IPA) for all words, including those with invalid IPA (after cleaning)
-* ``--invalid``: output only words with invalid IPA (after cleaning)
-* ``--output-file FILE``: save output to FILE
-* ``--format``: output (word, cleaned+normalized IPA) using the given format 
-* ``--sort``: sort the output
-
 
 ## Example
 

@@ -12,7 +12,7 @@ from lxml import etree
 import os
 import sys
 
-from wiktts.mwminer.mwpage import MWPage
+from wiktts.mw.page import Page
 
 __author__ = "Alberto Pettarin"
 __copyright__ = "Copyright 2016, Alberto Pettarin (www.albertopettarin.it)"
@@ -23,7 +23,7 @@ __status__ = "Development"
 
 NAMESPACES = {"ns": "http://www.mediawiki.org/xml/export-0.10/"}
 
-class MWParser(object):
+class Parser(object):
 
     def __init__(self, full_parsing=False):
         self.pages = []
@@ -56,7 +56,7 @@ class MWParser(object):
         if not append:
             self.clear()
         for page in root.xpath("ns:page", namespaces=NAMESPACES):
-            self.pages.append(MWPage(page, full_parsing=self.full_parsing))
+            self.pages.append(Page(page, full_parsing=self.full_parsing))
         return self
 
 

@@ -27,9 +27,9 @@ __version__ = "0.0.1"
 __email__ = "alberto@albertopettarin.it"
 __status__ = "Development"
 
-MWChunk = namedtuple("MWChunk", ["pages_total", "pages_ns", "index", "contents"])
+Chunk = namedtuple("Chunk", ["pages_total", "pages_ns", "index", "contents"])
 
-class MWSplitter(CommandLineTool):
+class Splitter(CommandLineTool):
     
     MEDIAWIKI_OPEN = u'<mediawiki xmlns="http://www.mediawiki.org/xml/export-0.10/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mediawiki.org/xml/export-0.10/ http://www.mediawiki.org/xml/export-0.10.xsd" version="0.10">\n'
     MEDIAWIKI_CLOSE = u'</mediawiki>'
@@ -110,7 +110,7 @@ class MWSplitter(CommandLineTool):
             ns=[],
             max_number_pages=None
         ):
-        super(MWSplitter, self).__init__()
+        super(Splitter, self).__init__()
         self.dump_file_path = dump_file_path
         self.output_directory_path = output_directory_path
         self.output_file_prefix = output_file_prefix
@@ -249,13 +249,13 @@ class MWSplitter(CommandLineTool):
                                 # output chunk and exit
                                 current_chunk_index += 1
                                 current_chunk_contents = self.MEDIAWIKI_OPEN + u"".join(current_chunk_lines) + self.MEDIAWIKI_CLOSE
-                                yield MWChunk(pages_total, pages_ns, current_chunk_index, current_chunk_contents)
+                                yield Chunk(pages_total, pages_ns, current_chunk_index, current_chunk_contents)
                                 return
                             if pages_in_current_chunk == self.pages_per_chunk:
                                 # output chunk 
                                 current_chunk_index += 1
                                 current_chunk_contents = self.MEDIAWIKI_OPEN + u"".join(current_chunk_lines) + self.MEDIAWIKI_CLOSE
-                                yield MWChunk(pages_total, pages_ns, current_chunk_index, current_chunk_contents)
+                                yield Chunk(pages_total, pages_ns, current_chunk_index, current_chunk_contents)
                                 pages_in_current_chunk = 0
                                 current_chunk_lines = []
                                 current_page_lines = []
@@ -280,12 +280,12 @@ class MWSplitter(CommandLineTool):
                 # output last chunk, if any
                 current_chunk_index += 1
                 current_chunk_contents = self.MEDIAWIKI_OPEN + u"".join(current_chunk_lines) + self.MEDIAWIKI_CLOSE
-                yield MWChunk(pages_total, pages_ns, current_chunk_index, current_chunk_contents)
+                yield Chunk(pages_total, pages_ns, current_chunk_index, current_chunk_contents)
 
 
 
 def main():
-    MWSplitter().run()
+    Splitter().run()
 
 if __name__ == "__main__":
     main()

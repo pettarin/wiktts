@@ -17,7 +17,7 @@ __status__ = "Development"
 
 NAMESPACES = {"ns": "http://www.mediawiki.org/xml/export-0.10/"}
 
-class MWPage(object):
+class Page(object):
     
     def __init__(self, page_obj, full_parsing=False):
         self.id = None

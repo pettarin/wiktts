@@ -3,7 +3,7 @@
 Mining MediaWiki dumps to create better TTS engines (using Machine Learning)
 
 * Version: 0.0.1
-* Date: 2016-05-20
+* Date: 2016-05-21
 * Developer: [Alberto Pettarin](http://www.albertopettarin.it/)
 * License: the MIT License (MIT)
 * Contact: [click here](http://www.albertopettarin.it/contact.html)
@@ -15,9 +15,9 @@ TBW
 
 This repository contains the following Python tools:
 
-* ``mwsplitter`` split a [MediaWiki dump](https://dumps.wikimedia.org/backup-index.html) into chunks
-* ``mwminer``: mine IPA strings from MediaWiki dumps
-* ``ipacleaner``: clean/normalize Unicode [IPA](http://www.internationalphoneticassociation.org/) strings
+* ``wiktts.mw.splitter`` split a [MediaWiki dump](https://dumps.wikimedia.org/backup-index.html) into chunks
+* ``wiktts.mw.miner``: mine [IPA](http://www.internationalphoneticassociation.org/) strings from a MediaWiki dump file
+* ``wiktts.ipacleaner``: clean+normalize Unicode IPA strings
 * TBD A tool to create train and test sets for [Sequitur G2P](https://www-i6.informatik.rwth-aachen.de/web/Software/g2p.html)
 * TBD A tool to create train and test sets for [Phonetisaurus G2P](https://github.com/AdolfVonKleist/Phonetisaurus)
 
@@ -47,17 +47,29 @@ This repository contains the following Python tools:
 
 ## Usage
 
-### mwsplitter
+### wiktts.mw.splitter
 
-See [wiktts/mwminer/README_mwsplitter.md](wiktts/mwminer/README_mwsplitter.md)
+```bash
+$ python -m wiktts.mw.splitter DUMP.XML[.BZ2] [OPTIONS]
+```
 
-### mwminer
+[Details](wiktts/mw/splitter/README.md)
 
-See [wiktts/mwminer/README_mwminer.md](wiktts/mwminer/README_mwminer.md)
+### wiktts.mw.miner
 
-### ipacleaner
+```bash
+$ python -m wiktts.mw.miner PARSER DUMP [OPTIONS]
+```
 
-See [wiktts/ipacleaner/README.md](wiktts/ipacleaner/README.md)
+[Details](wiktts/mw/miner/README.md)
+
+### wiktts.ipacleaner
+
+```bash
+$ python -m wiktts.ipacleaner LEXICON [OPTIONS]
+```
+
+[Details](wiktts/ipacleaner/README.md)
 
 
 ## License

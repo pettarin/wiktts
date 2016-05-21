@@ -16,7 +16,7 @@ __version__ = "0.0.1"
 __email__ = "alberto@albertopettarin.it"
 __status__ = "Development"
 
-class MWMinerStatus(object):
+class MinerStatus(object):
 
     def __init__(self):
         self.mwdata = []

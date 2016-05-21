@@ -11,19 +11,15 @@ A **MediaWiki dump file**, either uncompressed (``.xml``) or compressed (``.xml.
 ## Output
 
 An UTF-8 encoded file,
-containing one tab-separated triple
-``ID\tword\tIPA``
-per line,
-where:
+containing one tab-separated pair ``word\tIPA``
+per line, where:
 
-* ``ID`` is the ``/mediawiki/page/id`` string,
 * ``word`` is the ``/mediawiki/page/title`` string, and
 * ``IPA`` is the IPA string mined for ``word``.
 
 The mined **word string is not modified** in any way.
 
-The mined **IPA string is modified** only
-by removing the leading and trailing ``/.../`` or ``[...]``.
+The mined **IPA string is modified by removing the leading and trailing ``/.../`` or ``[...]`` only**.
 Hence, you might need to clean it further,
 depending on the intended application.
 See the ``wiktts.ipacleaner`` module for details.
@@ -32,13 +28,13 @@ See the ``wiktts.ipacleaner`` module for details.
 ## Usage
 
 ```bash
-$ python -m wiktts.mwminer PARSER DUMP [OPTIONS]
+$ python -m wiktts.mw.mwminer PARSER DUMP [OPTIONS]
 ```
 
 Example:
 
 ```bash
-$ python -m wiktts.mwminer enwiktionary enwiktionary-20160407-pages-meta-current.xml.bz2 --output-file enwiktionary-20160407.txt
+$ python -m wiktts.mw.mwminer enwiktionary enwiktionary-20160407-pages-meta-current.xml.bz2 --output-file enwiktionary-20160407.txt
 ```
 
 Please note that processing big MediaWiki dump files might take several minutes.
@@ -46,11 +42,43 @@ The current code is not optimized for speed.
 
 ### Options
 
-Invoke with ``--help`` to get the list of available options,
-including how to modify the output file:
+Invoke with ``--help`` to get the list of available options:
 
 ```bash
-$ python -m wiktts.mwminer --help
+$ python -m wiktts.mw.miner --help
+
+usage: __main__.py [-h] [--from-dir] [--output-file [OUTPUT_FILE]]
+                   [--pages-per-chunk [PAGES_PER_CHUNK]] [--ns NS [NS ...]]
+                   [--hide-progress] [--quiet] [--all] [--without] [--no-sort]
+                   [--stats] [--format [FORMAT]]
+                   ipaparser dump
+
+Extract IPA strings from a given MediaWiki dump file.
+
+positional arguments:
+  ipaparser             IPA parser (built-in name or file path)
+  dump                  MediaWiki dump file (.xml or .xml.bz2) or directory
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --from-dir            Load .xml files inside dump directory
+  --output-file [OUTPUT_FILE]
+                        Write output to file
+  --pages-per-chunk [PAGES_PER_CHUNK]
+                        Number of pages per output file (default: 1000)
+  --ns NS [NS ...]      Extract only pages with the specified ns values
+                        (default: [0])
+  --hide-progress       Do not print extraction progress messages
+  --quiet               Do not print extraction results to stdout
+  --all                 Print extraction results for all pages (with and
+                        without IPA string)
+  --without             Print extraction results only for pages without IPA
+                        string
+  --no-sort             Do not sort the extraction results
+  --stats               Print the count of all pages and pages with IPA string
+  --format [FORMAT]     Format output according to this string (available
+                        placeholders: {ID}, {WORD}, {IPA}, {EXTRACTED},
+                        {FILENAME}, {FILEPATH})
 ```
 
 
@@ -184,14 +212,14 @@ derivato dal latino ''[[liber]]''
 invoking:
 
 ```bash
-$ python -m wiktts.mwminer itwiktionary itwiktionary-20160407-pages-meta-current.xml.bz2 --output-file itwiktionary-20160407.txt
+$ python -m wiktts.mw.mwminer itwiktionary itwiktionary-20160407-pages-meta-current.xml.bz2 --output-file itwiktionary-20160407.txt
 ```
 
 will produce (spaces added for clarity):
 
 ```
 ...
-778 \t libero \t 'libero
+libero \t 'libero
 ...
 ```
 
