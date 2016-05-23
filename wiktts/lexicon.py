@@ -33,12 +33,14 @@ PLACEHOLDERS = [
     "{RVALID}",     # raw IPA string is IPA valid (bool)
     "{CVALID}",     # cleaned IPA string is IPA valid (bool)
     "{WORD}",       # word (Unicode)
-    "{RIPA}",       # raw IPA string (Unicode)
+    "{RUNI}",       # raw Unicode string (Unicode)
+    "{RIPA}",       # full repr of raw IPA string (Unicode)
     "{RCV}",        # cns_vwl repr of raw IPA string (Unicode)
     "{RCVS}",       # cns_vwl_str repr of raw IPA string (Unicode)
     "{RCVSL}",      # cns_vwl_str_len repr of raw IPA string (Unicode)
     "{RCVSLW}",     # cns_vwl_str_len_wb repr of raw IPA string (Unicode)
     "{RCVSLWS}",    # cns_vwl_str_len_wb_sb repr of raw IPA string (Unicode)
+    "{CIPA}",       # cleaned Unicode string (Unicode)
     "{CIPA}",       # full repr of cleaned+normalized IPA string (Unicode)
     "{CCV}",        # cns_vwl repr of cleaned+normalized IPA string (Unicode)
     "{CCVS}",       # cns_vwl_str repr of cleaned+normalized IPA string (Unicode)
@@ -214,13 +216,15 @@ class Lexicon(object):
             RVALID=d.raw_is_valid,
             CVALID=d.cleaned_is_valid,
             WORD=d.word,
-            RIPA=d.raw_ipa_unicode,
+            RUNI=d.raw_ipa_unicode,
+            RIPA=d.raw_ipastring,
             RCV=d.raw_ipastring.cns_vwl,
             RCVS=d.raw_ipastring.cns_vwl_str,
             RCVSL=d.raw_ipastring.cns_vwl_str_len,
             RCVSLW=d.raw_ipastring.cns_vwl_str_len_wb,
             RCVSLWS=d.raw_ipastring.cns_vwl_str_len_wb_sb,
-            CIPA=d.cleaned_ipa_unicode,
+            CUNI=d.cleaned_ipa_unicode,
+            CIPA=d.cleaned_ipastring,
             CCV=d.cleaned_ipastring.cns_vwl,
             CCVS=d.cleaned_ipastring.cns_vwl_str,
             CCVSL=d.cleaned_ipastring.cns_vwl_str_len,

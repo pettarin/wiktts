@@ -16,6 +16,7 @@ By default:
 * lines beginning with ``#`` (``U+0023 NUMBER SIGN``) are ignored;
 * the field separator is assumed to be the tab character (``U+0009 TAB``); and
 * the word and IPA fields the first and second one of each row.
+
 You can change these defaults with the ``--comment``, ``--delimiter``, and
 ``--word-index``/``--ipa-index`` parameters.
 
@@ -41,13 +42,16 @@ If you want to output say, only IPA letters,
 you can use the ``--format`` parameter.
 
 Also note that by default (word, cleaned+normalized IPA) pairs
-are output only if cleaned Unicode string is IPA valid.
+are output only if the cleaned Unicode string is IPA valid.
 In other words, if after the cleaning step the Unicode string
 still contains characters that are not IPA valid,
 the pair (word, cleaned IPA) is discarded.
 You can change this behavior using the ``--all`` and ``--comment-invalid`` parameters.
 You can invert this behavior, that is, printing only the words with invalid IPA,
 using the ``--invalid`` parameter.
+If you override the default, the resulting IPA string will contain
+all recognized IPA characters,
+while characters that are not IPA valid will be ignored.
 
 
 ## Usage
@@ -92,9 +96,10 @@ optional arguments:
   --phones-file [PHONES_FILE]
                         Write list of phones to file
   --format [FORMAT]     Format output according to this template (available
-                        placeholders: {RVALID}, {CVALID}, {WORD}, {RIPA},
-                        {RCV}, {RCVS}, {RCVSL}, {RCVSLW}, {RCVSLWS}, {CIPA},
-                        {CCV}, {CCVS}, {CCVSL}, {CCVSLW}, {CCVSLWS})
+                        placeholders: {RVALID}, {CVALID}, {WORD}, {RUNI},
+                        {RIPA}, {RCV}, {RCVS}, {RCVSL}, {RCVSLW}, {RCVSLWS},
+                        {CIPA}, {CIPA}, {CCV}, {CCVS}, {CCVSL}, {CCVSLW},
+                        {CCVSLWS})
   --comment [COMMENT]   Ignore lines in the lexicon file starting with this
                         string (default: '#')
   --delimiter [DELIMITER]
