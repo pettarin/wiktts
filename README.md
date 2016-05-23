@@ -9,22 +9,24 @@ Mining MediaWiki dumps to create better TTS engines (using Machine Learning)
 * Contact: [click here](http://www.albertopettarin.it/contact.html)
 
 
-## Summary
+## Goal
 
 TBW
 
-This repository contains the following Python tools:
+
+## In The Box
+
+This repository contains the following Python 2.7.x/3.5.x tools:
 
 * ``wiktts.mw.splitter`` split a [MediaWiki dump](https://dumps.wikimedia.org/backup-index.html) into chunks
 * ``wiktts.mw.miner``: mine [IPA](http://www.internationalphoneticassociation.org/) strings from a MediaWiki dump file
 * ``wiktts.ipacleaner``: clean+normalize Unicode IPA strings
-* TBD A tool to create train and test sets for [Sequitur G2P](https://www-i6.informatik.rwth-aachen.de/web/Software/g2p.html)
-* TBD A tool to create train and test sets for [Phonetisaurus G2P](https://github.com/AdolfVonKleist/Phonetisaurus)
+* ``wiktts.trainer``: prepare train/test/symbol sets for LTS/G2P tools (e.g., Phonetisaurus or Sequitur)
 
 
 ## Dependencies
 
-1. Python 2.7.x or 3.5.x 
+1. Python 2.7.x or 3.5.x
 2. Python module ``lxml`` (``pip install lxml``)
 3. Python module ``ipapy`` (``pip install ipapy``)
 
@@ -43,6 +45,11 @@ This repository contains the following Python tools:
     $ cd dumps
     $ wget "https://dumps.wikimedia.org/enwiktionary/20160407/enwiktionary-20160407-pages-meta-current.xml.bz2"
     ```
+
+4. Install the LTS/G2P tool(s) you want to work with.
+   Currently, ``wiktts.trainer`` outputs in formats readable by:
+    * [Phonetisaurus](https://github.com/AdolfVonKleist/Phonetisaurus)
+    * [Sequitur](https://www-i6.informatik.rwth-aachen.de/web/Software/g2p.html)
 
 
 ## Usage
@@ -70,6 +77,14 @@ $ python -m wiktts.ipacleaner LEXICON [OPTIONS]
 ```
 
 [Details](wiktts/ipacleaner/README.md)
+
+### wiktts.trainer
+
+```bash
+$ python -m wiktts.trainer G2PTOOL LEXICON OUTPUTDIR [OPTIONS]
+```
+
+[Details](wiktts/trainer/README.md)
 
 
 ## License

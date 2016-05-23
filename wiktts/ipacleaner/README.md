@@ -14,8 +14,8 @@ Each line might contain additional fields.
 
 By default:
 * lines beginning with ``#`` (``U+0023 NUMBER SIGN``) are ignored;
-* the field separator is assumed to be the tab character (``U+0009 TAB``); and
-* the word and IPA fields the first and second one of each row.
+* the field separator is the tab character (``U+0009 TAB``); and
+* the word and IPA fields are the first and second fields of each line.
 
 You can change these defaults with the ``--comment``, ``--delimiter``, and
 ``--word-index``/``--ipa-index`` parameters.
