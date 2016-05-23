@@ -13,8 +13,8 @@ from ipapy.ipastring import IPAString
 
 from wiktts import write_file
 from wiktts.commandlinetool import CommandLineTool
-from wiktts.ipacleaner.lexicon import PLACEHOLDERS
-from wiktts.ipacleaner.lexicon import Lexicon
+from wiktts.lexicon import PLACEHOLDERS
+from wiktts.lexicon import Lexicon
 
 __author__ = "Alberto Pettarin"
 __copyright__ = "Copyright 2016, Alberto Pettarin (www.albertopettarin.it)"
@@ -57,7 +57,7 @@ class IPACleaner(CommandLineTool):
             "name": "--comment",
             "nargs": "?",
             "type": str,
-            "default": "u",
+            "default": u"#",
             "help": "Ignore lines in the lexicon file starting with this string (default: '#')"
         },
         {
@@ -102,6 +102,11 @@ class IPACleaner(CommandLineTool):
             "help": "Print results for all words (with or without valid IPA after cleaning)"
         },
         {
+            "name": "--comment-invalid",
+            "action": "store_true",
+            "help": "Comment lines regarding words with invalid IPA (after cleaning; you might want --no-sort as well)"
+        },
+        {
             "name": "--invalid",
             "action": "store_true",
             "help": "Print results for words with invalid IPA (after cleaning)"
@@ -124,12 +129,13 @@ class IPACleaner(CommandLineTool):
         sort_results = not self.vargs["no_sort"]
         template = self.vargs["format"]
         comment = self.vargs["comment"]
+        comment_invalid = self.vargs["comment_invalid"]
         delimiter = self.vargs["delimiter"]
         word_index = self.vargs["word_index"]
         ipa_index = self.vargs["ipa_index"]
 
         # read lexicon and clean raw IPA strings
-        lexi = Lexicon()
+        lexi = Lexicon(clean=False)
         lexi.read_file(
             lexicon_file_path=lexicon,
             comment=comment,
@@ -154,7 +160,9 @@ class IPACleaner(CommandLineTool):
             formatted_data = lexi.format_lexicon(
                 template=template,
                 include_valid=include_valid,
-                include_invalid=include_invalid
+                include_invalid=include_invalid,
+                comment_invalid=comment_invalid,
+                comment=comment
             )
             # sort if requested
             if sort_results:

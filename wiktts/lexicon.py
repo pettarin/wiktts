@@ -12,7 +12,6 @@ import os
 import unicodedata
 from ipapy import is_valid_ipa
 from ipapy import remove_invalid_ipa_characters
-from ipapy.asciimapper import ASCIIMapper
 from ipapy.compatibility import to_unicode_string
 from ipapy.compatibility import unicode_to_hex
 from ipapy.ipastring import IPAString
@@ -26,8 +25,8 @@ __version__ = "0.0.1"
 __email__ = "alberto@albertopettarin.it"
 __status__ = "Development"
 
-DEFAULT_FORMAT_BOTH = u"{CVALID}\t{WORD}\t{CCVSL}"
-DEFAULT_FORMAT_VALID = u"{WORD}\t{CCVSL}"
+DEFAULT_FORMAT_BOTH = u"{WORD}\t{CIPA}\t{CVALID}"
+DEFAULT_FORMAT_VALID = u"{WORD}\t{CIPA}"
 DEFAULT_FORMAT_INVALID = u"{WORD}\t{RIPA}"
 
 PLACEHOLDERS = [
@@ -39,13 +38,13 @@ PLACEHOLDERS = [
     "{RCVS}",       # cns_vwl_str repr of raw IPA string (Unicode)
     "{RCVSL}",      # cns_vwl_str_len repr of raw IPA string (Unicode)
     "{RCVSLW}",     # cns_vwl_str_len_wb repr of raw IPA string (Unicode)
-    "{RCVSLWS}"     # cns_vwl_str_len_wb_sb repr of raw IPA string (Unicode)
+    "{RCVSLWS}",    # cns_vwl_str_len_wb_sb repr of raw IPA string (Unicode)
     "{CIPA}",       # full repr of cleaned+normalized IPA string (Unicode)
     "{CCV}",        # cns_vwl repr of cleaned+normalized IPA string (Unicode)
     "{CCVS}",       # cns_vwl_str repr of cleaned+normalized IPA string (Unicode)
     "{CCVSL}",      # cns_vwl_str_len repr of cleaned+normalized IPA string (Unicode)
     "{CCVSLW}",     # cns_vwl_str_len_wb repr of cleaned+normalized IPA string (Unicode)
-    "{CCVSLWS}"     # cns_vwl_str_len_wb_sb repr of cleaned+normalized IPA string (Unicode)
+    "{CCVSLWS}",    # cns_vwl_str_len_wb_sb repr of cleaned+normalized IPA string (Unicode)
 ]
 
 class LexiconEntry(object):
@@ -53,41 +52,38 @@ class LexiconEntry(object):
     TBW
     """
 
-    def __init__(self, word, raw_ipa_unicode, cleaner=None):
+    def __init__(self, word, cleaned_ipa_unicode, raw_ipa_unicode=None):
         self.word = word
+        self.cleaned_ipa_unicode = cleaned_ipa_unicode
+        self.cleaned_ipastring = None
         self.raw_ipa_unicode = raw_ipa_unicode
         self.raw_ipastring = None
-        self.canonical_ipastring = None
-        self.__raw_is_valid = False
         self.__cleaned_is_valid = False
-        self.__valid_chars = None
-        self.__invalid_chars = None
-        self.cleaned_ipa_unicode = self._clean(cleaner)
+        self.__cleaned_valid_chars = []
+        self.__cleaned_invalid_chars = []
+        self.__raw_is_valid = False
         self._parse()
 
-    def _clean(self, cleaner):
-        if cleaner is None:
-            return self.raw_ipa_unicode
-        return cleaner.clean(self.raw_ipa_unicode)
-   
     def _parse(self):
-        self.__raw_is_valid = is_valid_ipa(self.raw_ipa_unicode)
         self.__cleaned_is_valid = is_valid_ipa(self.cleaned_ipa_unicode)
-        self.__valid_chars, self.__invalid_chars = remove_invalid_ipa_characters(
+        self.__raw_is_valid = False
+        self.__cleaned_valid_chars, self.__cleaned_invalid_chars = remove_invalid_ipa_characters(
             unicode_string=self.cleaned_ipa_unicode,
             return_invalid=True,
             single_char_parsing=False
         )
-        self.canonical_ipastring = IPAString(
+        self.cleaned_ipastring = IPAString(
             unicode_string=self.cleaned_ipa_unicode,
             ignore=True,
             single_char_parsing=False
         )
-        self.raw_ipastring = IPAString(
-            unicode_string=self.raw_ipa_unicode,
-            ignore=True,
-            single_char_parsing=False
-        )
+        if self.raw_ipa_unicode is not None:
+            self.__raw_is_valid = is_valid_ipa(self.raw_ipa_unicode)
+            self.raw_ipastring = IPAString(
+                unicode_string=self.raw_ipa_unicode,
+                ignore=True,
+                single_char_parsing=False
+            )
 
     @property
     def raw_is_valid(self):
@@ -98,16 +94,16 @@ class LexiconEntry(object):
         return self.__cleaned_is_valid
 
     @property
-    def invalid_chars(self):
+    def cleaned_invalid_chars(self):
         return self.__invalid_chars
 
     @property
-    def valid_chars(self):
+    def cleaned_valid_chars(self):
         return self.__valid_chars
 
     @property
-    def canonical_ipa_unicode(self):
-        return str(self.canonical_ipastring)
+    def canonical_unicode(self):
+        return str(self.cleaned_ipastring)
 
 
 
@@ -116,8 +112,9 @@ class Lexicon(object):
     TBW
     """
 
-    def __init__(self):
+    def __init__(self, clean=False):
         self.entries = []
+        self.clean = clean
 
     def __len__(self):
         return len(self.entries)
@@ -140,23 +137,34 @@ class Lexicon(object):
         cleaner = UniCleaner()
         comment = to_unicode_string(comment)
         delimiter = to_unicode_string(delimiter)
+        u_word = []
+        u_raw_ipa = []
         with io.open(lexicon_file_path, "r", encoding="utf-8") as lexicon_file:
             for line in lexicon_file:
                 line = line.strip()
                 if not line.startswith(comment):
                     acc = line.split(delimiter)
-                    self.entries.append(LexiconEntry(
-                        word=acc[word_index],
-                        raw_ipa_unicode=acc[ipa_index],
-                        cleaner=cleaner
-                    ))
+                    u_word.append(acc[word_index])
+                    u_raw_ipa.append(acc[ipa_index])
+        if self.clean:
+            su_cleaned = u_raw_ipa
+            su_raw = [None for c in u_raw_ipa]
+        else:
+            su_raw = u_raw_ipa
+            su_cleaned = (cleaner.clean(u"\n".join(u_raw_ipa))).split(u"\n")
+        for (w, c, r) in zip(u_word, su_cleaned, su_raw):
+            self.entries.append(LexiconEntry(
+                word=w,
+                cleaned_ipa_unicode=c,
+                raw_ipa_unicode=r
+            ))
 
     def phones(self, filter_phones):
         if filter_phones is None:
             filter_phones = DEFAULT_FORMAT_VALID
         s = set()
         for e in self.entries:
-            c = e.canonical_ipastring
+            c = e.cleaned_ipastring
             if "{CIPA}" in filter_phones:
                 #c = c
                 pass
@@ -174,18 +182,13 @@ class Lexicon(object):
         return s
 
     def format_phones(self, filter_phones):
-        mapper = ASCIIMapper()
         acc = []
         for p in self.phones(filter_phones=filter_phones):
             u = p.unicode_repr
-            try:
-                a = mapper[p.canonical_representation]
-            except:
-                a = u""
-            acc.append(u"'%s'\t'%s'\t%s (%s)" % (u, a, p.name, unicode_to_hex(u)))
+            acc.append(u"'%s'\t%s (%s)" % (u, p.name, unicode_to_hex(u)))
         return sorted(acc)
 
-    def format_lexicon(self, template=None, include_valid=True, include_invalid=False):
+    def format_lexicon(self, template=None, include_valid=True, include_invalid=False, comment_invalid=False, comment=u"#"):
         # select template
         template = to_unicode_string(template)
         if include_valid and include_invalid:
@@ -201,8 +204,13 @@ class Lexicon(object):
             template = template or DEFAULT_FORMAT_BOTH
             filtered_data = []
 
+        if comment_invalid:
+            template = u"{COMMENT}" + template
+            comment += u" "
+
         # format data
         return [template.format(
+            COMMENT=(u"" if d.cleaned_is_valid else comment),
             RVALID=d.raw_is_valid,
             CVALID=d.cleaned_is_valid,
             WORD=d.word,
@@ -213,11 +221,11 @@ class Lexicon(object):
             RCVSLW=d.raw_ipastring.cns_vwl_str_len_wb,
             RCVSLWS=d.raw_ipastring.cns_vwl_str_len_wb_sb,
             CIPA=d.cleaned_ipa_unicode,
-            CCV=d.canonical_ipastring.cns_vwl,
-            CCVS=d.canonical_ipastring.cns_vwl_str,
-            CCVSL=d.canonical_ipastring.cns_vwl_str_len,
-            CCVSLW=d.canonical_ipastring.cns_vwl_str_len_wb,
-            CCVSLWS=d.canonical_ipastring.cns_vwl_str_len_wb_sb,
+            CCV=d.cleaned_ipastring.cns_vwl,
+            CCVS=d.cleaned_ipastring.cns_vwl_str,
+            CCVSL=d.cleaned_ipastring.cns_vwl_str_len,
+            CCVSLW=d.cleaned_ipastring.cns_vwl_str_len_wb,
+            CCVSLWS=d.cleaned_ipastring.cns_vwl_str_len_wb_sb,
         ) for d in filtered_data]
 
 

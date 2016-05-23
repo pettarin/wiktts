@@ -10,7 +10,6 @@ from __future__ import print_function
 import os
 
 from ipapy.data import load_data_file
-from ipapy.compatibility import hex_to_unichr
 
 __author__ = "Alberto Pettarin"
 __copyright__ = "Copyright 2016, Alberto Pettarin (www.albertopettarin.it)"
