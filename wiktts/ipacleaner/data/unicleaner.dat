@@ -1,0 +1,320 @@
+#
+# UniCleaner Data File
+#
+# Syntax:
+#   old,[new]
+#
+#   where:
+#       - old is a Unicode codepoint (xxxx)
+#       - new is either empty or one or more Unicode codepoints (yyyy, yyyy_zzzz, etc.)
+#         (if empty, it means that old will be removed)
+#
+# Version: 0.0.3
+# Date:    2016-05-23
+#
+
+###############
+# long (02D0) #
+###############
+# COLON
+003A,02D0
+        
+#########################
+# primary-stress (02C8) #
+#########################
+# QUOTATION MARK
+0022,02C8
+# APOSTROPHE
+0027,02C8
+# GRAVE ACCENT
+0060,02C8
+# ACUTE ACCENT
+00B4,02C8
+# MODIFIER LETTER PRIME
+02B9,02C8
+# LEFT SINGLE QUOTATION MARK
+2018,02C8
+# RIGHT SINGLE QUOTATION MARK
+2019,02C8
+# PRIME
+2032,02C8
+
+###########################
+# secondary-stress (02CC) #
+###########################
+# COMMA
+002C,02CC
+# GREEK LOWER NUMERAL SIGN
+0375,02CC
+# SINGLE LOW-9 QUOTATION MARK
+201A,02CC
+
+#########################
+# syllable-break (002E) #
+#########################
+# MIDDLE DOT
+00B7,002E
+# HYPHENATION POINT
+2027,002E
+
+#####################
+# word-break (0020) #
+#####################
+# EN QUAD
+2000,0020
+# EM QUAD
+2001,0020
+# EN SPACE
+2002,0020
+# EM SPACE
+2003,0020
+# THREE-PER-EM SPACE
+2004,0020
+# FOUR-PER-EM SPACE
+2005,0020
+# SIX-PER-EM SPACE
+2006,0020
+# FIGURE SPACE
+2007,0020
+# PUNCTUATION SPACE
+2008,0020
+# THIN SPACE
+2009,0020
+# HAIR SPACE
+200A,0020
+
+##################
+# linking (203F) #
+##################
+# CHARACTER TIE
+2040,203F
+
+######################
+# global-rise (2197) #
+######################
+# UPWARDS ARROW
+2191,2197
+
+######################
+# global-fall (2198) #
+######################
+# DOWNWARDS ARROW
+2193,2198
+
+###########################
+# major-group (007C+007C) #
+###########################
+# DOUBLE VERTICAL LINE
+2016,007C_007C
+
+#########################################################################################
+# voiceless palato-alveolar sibilant-fricative consonant (0283, LATIN SMALL LETTER ESH) #
+#########################################################################################
+# INTEGRAL
+222B,0283
+
+##############################################################################
+# voiced palatal nasal consonant (0272, LATIN SMALL LETTER N WITH LEFT HOOK) #
+##############################################################################
+# LATIN SMALL LETTER N WITH TILDE
+00F1,0272
+
+#################################################################
+# open-mid back rounded vowel (0254, LATIN SMALL LETTER OPEN O) #
+#################################################################
+# LATIN LETTER SMALL CAPITAL OPEN O
+1D10,0254
+
+####################################################################
+# open-mid front unrounded vowel (025B, LATIN SMALL LETTER OPEN E) #
+####################################################################
+# GREEK SMALL LETTER EPSILON
+03B5,025B
+# GREEK SMALL LETTER EPSILON WITH TONOS
+03AD,025B
+
+################################################################
+# mid central unrounded vowel (0259, LATIN SMALL LETTER SCHWA) #
+################################################################
+# LATIN SMALL LETTER TURNED E
+01DD,0259
+
+#######################################################################
+# close-mid back unrounded vowel (0264, LATIN SMALL LETTER RAMS HORN) #
+#######################################################################
+# GREEK SMALL LETTER GAMMA
+03B3,0264
+
+#################################################################################
+# voiced dental non-sibilant-fricative consonant (00F0, LATIN SMALL LETTER ETH) #
+#################################################################################
+# GREEK SMALL LETTER DELTA
+03B4,00F0
+
+####################################################################################
+# remove grave/acute/circumflex/tilde/diaeresis/macron/caron, keep the base letter #
+####################################################################################
+# LATIN SMALL LETTER A WITH GRAVE
+00E0,0061
+# LATIN SMALL LETTER A WITH ACUTE
+00E1,0061
+# LATIN SMALL LETTER A WITH CIRCUMFLEX
+00E2,0061
+# LATIN SMALL LETTER A WITH TILDE
+00E3,0061
+# LATIN SMALL LETTER A WITH DIAERESIS
+00E4,0061
+        
+# LATIN SMALL LETTER E WITH GRAVE
+00E8,0065
+# LATIN SMALL LETTER E WITH ACUTE
+00E9,0065
+# LATIN SMALL LETTER E WITH CIRCUMFLEX
+00EA,0065
+# LATIN SMALL LETTER E WITH DIAERESIS
+00EB,0065
+        
+# LATIN SMALL LETTER I WITH GRAVE
+00EC,0069
+# LATIN SMALL LETTER I WITH ACUTE
+00ED,0069
+# LATIN SMALL LETTER I WITH CIRCUMFLEX
+00EE,0069
+# LATIN SMALL LETTER I WITH DIAERESIS
+00EF,0069
+        
+# LATIN SMALL LETTER O WITH GRAVE
+00F2,006F
+# LATIN SMALL LETTER O WITH ACUTE
+00F3,006F
+# LATIN SMALL LETTER O WITH CIRCUMFLEX
+00F4,006F
+# LATIN SMALL LETTER O WITH TILDE
+00F5,006F
+# LATIN SMALL LETTER O WITH DIAERESIS
+00F6,006F
+
+# LATIN SMALL LETTER O WITH GRAVE
+00F9,0075
+# LATIN SMALL LETTER O WITH ACUTE
+00FA,0075
+# LATIN SMALL LETTER O WITH CIRCUMFLEX
+00FB,0075
+# LATIN SMALL LETTER O WITH DIAERESIS
+00FC,0075
+
+# LATIN SMALL LETTER A WITH MACRON
+0101,0061
+# LATIN SMALL LETTER A WITH BREVE
+0103,0061
+# LATIN SMALL LETTER A WITH DOT BELOW
+1EA1,0061
+
+# LATIN SMALL LETTER E WITH MACRON
+0113,0065
+# LATIN SMALL LETTER E WITH BREVE
+0115,0065
+# LATIN SMALL LETTER E WITH TILDE
+1EBD,0065
+
+# LATIN SMALL LETTER I WITH MACRON
+012B,0069
+# LATIN SMALL LETTER I WITH BREVE
+012D,0069
+# LATIN SMALL LETTER I WITH TILDE
+0129,0069
+# LATIN SMALL LETTER DOTLESS I
+0131,0069
+# LATIN SMALL LETTER I WITH CARON
+01D0,0069
+
+# LATIN SMALL LETTER O WITH MACRON
+014D,006F
+# LATIN SMALL LETTER O WITH BREVE
+014F,006F
+
+# LATIN SMALL LETTER U WITH TILDE
+0169,0075
+# LATIN SMALL LETTER U WITH MACRON
+016B,0075
+# LATIN SMALL LETTER U WITH BREVE
+016D,0075
+
+########################################
+# just remove the following characters #
+########################################
+# EXCLAMATION MARK
+0021,
+# PERCENT SIGN
+0025,
+# AMPERSAND 
+0026,
+# LEFT PARENTHESIS
+0028,
+# RIGHT PARENTHESIS
+0029,
+# ASTERISK
+002A,
+# HYPHEN-MINUS
+002D,
+# SOLIDUS
+002F,
+# QUESTION MARK
+003F,
+# LEFT SQUARE BRACKET
+005B,
+# REVERSE SOLIDUS
+005C,
+# RIGHT SQUARE BRACKET
+005D,
+# LEFT CURLY BRACKET
+007B,
+# RIGHT CURLY BRACKET
+007D,
+# NO-BREAK SPACE
+00A0,
+# DEGREE SIGN
+00B0,
+# MODIFIER LETTER MACRON 
+02C9,
+# MODIFIER LETTER LOW MACRON 
+02CD,
+# MODIFIER LETTER PLUS SIGN
+02D6,
+# COMBINING VERTICAL LINE ABOVE
+030D,
+# COMBINING CIRCUMFLEX ACCENT BELOW
+032D,
+# COMBINING COMMA BELOW
+0326,
+# COMBINING LONG STROKE OVERLAY
+0336,
+# COMBINING GREEK PERISPOMENI
+0342,
+# ZERO WIDTH SPACE
+200B,
+# ZERO WIDTH NON-JOINER
+200C,
+# ZERO WIDTH JOINER
+200D,
+# LEFT-TO-RIGHT MARK MARK
+200E,
+# RIGHT-TO-LEFT MARK
+200F,
+# HYPHEN
+2010,
+# NON-BREAKING HYPHEN
+2011,
+# FIGURE DASH
+2012,
+# EN DASH
+2013,
+# EM DASH
+2014,
+# HORIZONTAL BAR
+2015,
+# HORIZONTAL ELLIPSIS
+2026,
+# WORD JOINER
+2060,
+

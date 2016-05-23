@@ -13,26 +13,24 @@ from ipapy.ipastring import IPAString
 
 from wiktts import write_file
 from wiktts.commandlinetool import CommandLineTool
-from wiktts.ipacleaner.iclexicon import PLACEHOLDERS
-from wiktts.ipacleaner.iclexicon import ICLexicon
+from wiktts.ipacleaner.lexicon import PLACEHOLDERS
+from wiktts.ipacleaner.lexicon import Lexicon
 
 __author__ = "Alberto Pettarin"
 __copyright__ = "Copyright 2016, Alberto Pettarin (www.albertopettarin.it)"
 __license__ = "MIT"
-__version__ = "0.0.1"
 __email__ = "alberto@albertopettarin.it"
-__status__ = "Development"
 
 class IPACleaner(CommandLineTool):
 
-    AP_DESCRIPTION = u"Clean and normalize IPA strings mined from a MediaWiki dump file."
+    AP_DESCRIPTION = u"Clean and normalize IPA strings from a lexicon file."
     AP_ARGUMENTS = [
         {
             "name": "lexicon",
             "nargs": None,
             "type": str,
             "default": None,
-            "help": "Lexicon file"
+            "help": "Input lexicon file"
         },
         {
             "name": "--output-file",
@@ -42,11 +40,18 @@ class IPACleaner(CommandLineTool):
             "help": "Write output to file"
         },
         {
+            "name": "--phones-file",
+            "nargs": "?",
+            "type": str,
+            "default": None,
+            "help": "Write list of phones to file"
+        },
+        {
             "name": "--format",
             "nargs": "?",
             "type": str,
             "default": None,
-            "help": "Format output according to this string (available placeholders: %s)" % ", ".join(PLACEHOLDERS)
+            "help": "Format output according to this template (available placeholders: %s)" % ", ".join(PLACEHOLDERS)
         },
         {
             "name": "--comment",
@@ -77,9 +82,9 @@ class IPACleaner(CommandLineTool):
             "help": "Field index of the IPA string (default: 1)"
         },
         {
-            "name": "--sort",
+            "name": "--no-sort",
             "action": "store_true",
-            "help": "Sort the results"
+            "help": "Do not sort the results"
         },
         {
             "name": "--quiet",
@@ -89,7 +94,7 @@ class IPACleaner(CommandLineTool):
         {
             "name": "--stats",
             "action": "store_true",
-            "help": "Print the number of words with valid and invalid IPA"
+            "help": "Print statistics"
         },
         {
             "name": "--all",
@@ -101,15 +106,22 @@ class IPACleaner(CommandLineTool):
             "action": "store_true",
             "help": "Print results for words with invalid IPA (after cleaning)"
         },
+        {
+            "name": "--all-phones",
+            "action": "store_true",
+            "help": "Output all phones in the input lexicon, not just those selected by --format"
+        },
     ]
 
     def actual_command(self):
         # get options
         lexicon = self.vargs["lexicon"]
         output_file_path = self.vargs["output_file"]
+        phones_file_path = self.vargs["phones_file"]
+        all_phones = self.vargs["all_phones"]
         quiet = self.vargs["quiet"]
         print_stats = self.vargs["stats"] 
-        sort_results = self.vargs["sort"]
+        sort_results = not self.vargs["no_sort"]
         template = self.vargs["format"]
         comment = self.vargs["comment"]
         delimiter = self.vargs["delimiter"]
@@ -117,7 +129,7 @@ class IPACleaner(CommandLineTool):
         ipa_index = self.vargs["ipa_index"]
 
         # read lexicon and clean raw IPA strings
-        lexi = ICLexicon()
+        lexi = Lexicon()
         lexi.read_file(
             lexicon_file_path=lexicon,
             comment=comment,
@@ -153,6 +165,11 @@ class IPACleaner(CommandLineTool):
             if not quiet:
                 for d in formatted_data:
                     print(d)
+
+        # save phones to file
+        if phones_file_path is not None:
+            p_template = "{CIPA}" if all_phones else template
+            write_file(lexi.format_phones(p_template), phones_file_path)
 
         # print statistics if requested
         if print_stats:

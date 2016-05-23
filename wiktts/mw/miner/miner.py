@@ -21,9 +21,7 @@ from wiktts.mw.splitter.splitter import Splitter
 __author__ = "Alberto Pettarin"
 __copyright__ = "Copyright 2016, Alberto Pettarin (www.albertopettarin.it)"
 __license__ = "MIT"
-__version__ = "0.0.1"
 __email__ = "alberto@albertopettarin.it"
-__status__ = "Development"
 
 class Miner(CommandLineTool):
 
@@ -46,7 +44,7 @@ class Miner(CommandLineTool):
         {
             "name": "--from-dir",
             "action": "store_true",
-            "help": "Load .xml files inside dump directory"
+            "help": "Load .xml files inside this dump directory"
         },
         {
             "name": "--output-file",
@@ -97,14 +95,14 @@ class Miner(CommandLineTool):
         {
             "name": "--stats",
             "action": "store_true",
-            "help": "Print the count of all pages and pages with IPA string"
+            "help": "Print statistics"
         },
         {
             "name": "--format",
             "nargs": "?",
             "type": str,
             "default": None,
-            "help": "Format output according to this string (available placeholders: %s)" % ", ".join(PLACEHOLDERS)
+            "help": "Format output according to this template (available placeholders: %s)" % ", ".join(PLACEHOLDERS)
         },
     ]
 

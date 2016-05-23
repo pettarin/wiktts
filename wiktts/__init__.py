@@ -12,8 +12,9 @@ import io
 __author__ = "Alberto Pettarin"
 __copyright__ = "Copyright 2016, Alberto Pettarin (www.albertopettarin.it)"
 __license__ = "MIT"
-__version__ = "0.0.1"
 __email__ = "alberto@albertopettarin.it"
+
+__version__ = "0.0.3"
 __status__ = "Development"
 
 def write_file(formatted_data, output_file_path):

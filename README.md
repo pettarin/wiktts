@@ -2,8 +2,8 @@
 
 Mining MediaWiki dumps to create better TTS engines (using Machine Learning)
 
-* Version: 0.0.1
-* Date: 2016-05-21
+* Version: 0.0.3
+* Date: 2016-05-23
 * Developer: [Alberto Pettarin](http://www.albertopettarin.it/)
 * License: the MIT License (MIT)
 * Contact: [click here](http://www.albertopettarin.it/contact.html)

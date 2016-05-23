@@ -9,12 +9,15 @@ from __future__ import absolute_import
 from __future__ import print_function
 import io
 import os
+import unicodedata
 from ipapy import is_valid_ipa
 from ipapy import remove_invalid_ipa_characters
+from ipapy.asciimapper import ASCIIMapper
 from ipapy.compatibility import to_unicode_string
+from ipapy.compatibility import unicode_to_hex
 from ipapy.ipastring import IPAString
 
-from wiktts.ipacleaner.iccleaner import ICCleaner
+from wiktts.ipacleaner.unicleaner import UniCleaner
 
 __author__ = "Alberto Pettarin"
 __copyright__ = "Copyright 2016, Alberto Pettarin (www.albertopettarin.it)"
@@ -45,7 +48,7 @@ PLACEHOLDERS = [
     "{CCVSLWS}"     # cns_vwl_str_len_wb_sb repr of cleaned+normalized IPA string (Unicode)
 ]
 
-class ICLexiconEntry(object):
+class LexiconEntry(object):
     """
     TBW
     """
@@ -108,7 +111,7 @@ class ICLexiconEntry(object):
 
 
 
-class ICLexicon(object):
+class Lexicon(object):
     """
     TBW
     """
@@ -134,7 +137,7 @@ class ICLexicon(object):
     def read_file(self, lexicon_file_path, comment=u"#", delimiter=u"\t", word_index=0, ipa_index=1):
         if (lexicon_file_path is None) or (not os.path.isfile(lexicon_file_path)):
             raise ValueError("The lexicon file path must exist. (Got '%s')" % lexicon_file_path)
-        cleaner = ICCleaner()
+        cleaner = UniCleaner()
         comment = to_unicode_string(comment)
         delimiter = to_unicode_string(delimiter)
         with io.open(lexicon_file_path, "r", encoding="utf-8") as lexicon_file:
@@ -142,11 +145,45 @@ class ICLexicon(object):
                 line = line.strip()
                 if not line.startswith(comment):
                     acc = line.split(delimiter)
-                    self.entries.append(ICLexiconEntry(
+                    self.entries.append(LexiconEntry(
                         word=acc[word_index],
                         raw_ipa_unicode=acc[ipa_index],
                         cleaner=cleaner
                     ))
+
+    def phones(self, filter_phones):
+        if filter_phones is None:
+            filter_phones = DEFAULT_FORMAT_VALID
+        s = set()
+        for e in self.entries:
+            c = e.canonical_ipastring
+            if "{CIPA}" in filter_phones:
+                #c = c
+                pass
+            if "{CCVSLWS}" in filter_phones:
+                c = c.cns_vwl_str_len_wb_sb
+            elif "{CCVSLW}" in filter_phones:
+                c = c.cns_vwl_str_len_wb
+            elif "{CCVSL}" in filter_phones:
+                c = c.cns_vwl_str_len
+            elif "{CCVS}" in filter_phones:
+                c = c.cns_vwl_str
+            elif "{CCV}" in filter_phones:
+                c = c.cns_vwl
+            s |= set(c.ipa_chars)
+        return s
+
+    def format_phones(self, filter_phones):
+        mapper = ASCIIMapper()
+        acc = []
+        for p in self.phones(filter_phones=filter_phones):
+            u = p.unicode_repr
+            try:
+                a = mapper[p.canonical_representation]
+            except:
+                a = u""
+            acc.append(u"'%s'\t'%s'\t%s (%s)" % (u, a, p.name, unicode_to_hex(u)))
+        return sorted(acc)
 
     def format_lexicon(self, template=None, include_valid=True, include_invalid=False):
         # select template

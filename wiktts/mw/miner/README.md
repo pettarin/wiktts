@@ -111,6 +111,18 @@ To support a new language (say, ``zz``):
 2. modify it according to the markup convention of the zz-Wiktionary or zz-Wikipedia,
 3. use ``zzwiktionary`` or ``zzwiki`` as the first argument.
 
+If you want to test a new parser you are developing,
+you can pass the path of the ``.py`` source file containing it
+as the first argument, for example:
+
+```bash
+$ python -m wiktts.mw.miner /path/to/your/zzwiktionary.py zzwiktionary-dump.xml
+```
+
+(This allows you to develop your own parsers outside the ``wiktts`` source directory.
+In particular, in case you installed ``wiktts`` without cloning the source repository,
+for example via ``pip``.)
+
 An IPA parser processes the MediaWiki text of a ``<page>`` by:
 
 1. locating the language block corresponding to the target language;
