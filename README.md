@@ -2,8 +2,8 @@
 
 Mining MediaWiki dumps to create better TTS engines (using Machine Learning)
 
-* Version: 0.0.3
-* Date: 2016-05-23
+* Version: 0.0.4
+* Date: 2016-05-24
 * Developer: [Alberto Pettarin](http://www.albertopettarin.it/)
 * License: the MIT License (MIT)
 * Contact: [click here](http://www.albertopettarin.it/contact.html)
@@ -20,7 +20,7 @@ This repository contains the following Python 2.7.x/3.5.x tools:
 
 * ``wiktts.mw.splitter`` split a [MediaWiki dump](https://dumps.wikimedia.org/backup-index.html) into chunks
 * ``wiktts.mw.miner``: mine [IPA](http://www.internationalphoneticassociation.org/) strings from a MediaWiki dump file
-* ``wiktts.ipacleaner``: clean+normalize Unicode IPA strings
+* ``wiktts.lexcleaner``: clean+normalize a pronunciation lexicon
 * ``wiktts.trainer``: prepare train/test/symbol sets for LTS/G2P tools (e.g., Phonetisaurus or Sequitur)
 
 
@@ -70,13 +70,13 @@ $ python -m wiktts.mw.miner PARSER DUMP [OPTIONS]
 
 [Details](wiktts/mw/miner/README.md)
 
-### wiktts.ipacleaner
+### wiktts.lexcleaner
 
 ```bash
-$ python -m wiktts.ipacleaner LEXICON [OPTIONS]
+$ python -m wiktts.lexcleaner LEXICON [OPTIONS]
 ```
 
-[Details](wiktts/ipacleaner/README.md)
+[Details](wiktts/lexcleaner/README.md)
 
 ### wiktts.trainer
 
@@ -99,7 +99,7 @@ See the [REFERENCES file](REFERENCES.md).
 
 ## Acknowledgments
 
-* Many thanks to [Dr. Tony Robinson](https://www.speechmatics.com/) for many useful discussions on this project.
+* Many thanks to [Dr. Tony Robinson](https://www.speechmatics.com/) for many useful discussions about this project.
 
 
 

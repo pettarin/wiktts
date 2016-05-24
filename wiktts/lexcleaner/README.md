@@ -1,11 +1,11 @@
-# ipacleaner 
+# lexiconcleaner 
 
-**Clean and normalize IPA strings** mined from a MediaWiki dump file.
+**Clean and normalize a pronunciation lexicon** mined from a MediaWiki dump file.
 
 
 ## Input
 
-A UTF-8 encoded plain-text **lexicon file**,
+A UTF-8 encoded plain-text **pronunciation lexicon file**,
 where each line represents a word.
 Each line should contain at least two fields,
 the word and the IPA string of its pronunciation,
@@ -23,7 +23,8 @@ You can change these defaults with the ``--comment``, ``--delimiter``, and
 
 ## Output
 
-A **new lexicon file** where the IPA string has been **cleaned** and **normalized**.
+A **new pronunciation lexicon file** where the word and IPA strings
+has been **cleaned** and **normalized**.
 
 **Cleaned** means that Unicode characters commonly used in MediaWiki but not IPA valid
 have been translated to the corresponding valid IPA character.

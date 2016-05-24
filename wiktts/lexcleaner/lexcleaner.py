@@ -15,13 +15,16 @@ from wiktts import write_file
 from wiktts.commandlinetool import CommandLineTool
 from wiktts.lexicon import PLACEHOLDERS
 from wiktts.lexicon import Lexicon
+from wiktts.lexcleaner.unicleaner import UniCleaner
+from wiktts.lexcleaner.unicleaner import DefaultWordCleaner
+from wiktts.lexcleaner.unicleaner import DefaultIPACleaner
 
 __author__ = "Alberto Pettarin"
 __copyright__ = "Copyright 2016, Alberto Pettarin (www.albertopettarin.it)"
 __license__ = "MIT"
 __email__ = "alberto@albertopettarin.it"
 
-class IPACleaner(CommandLineTool):
+class LexCleaner(CommandLineTool):
 
     AP_DESCRIPTION = u"Clean and normalize IPA strings from a lexicon file."
     AP_ARGUMENTS = [
@@ -40,11 +43,32 @@ class IPACleaner(CommandLineTool):
             "help": "Write output to file"
         },
         {
-            "name": "--phones-file",
+            "name": "--letter-file",
             "nargs": "?",
             "type": str,
             "default": None,
-            "help": "Write list of phones to file"
+            "help": "Write list of symbols (in words) to file"
+        },
+        {
+            "name": "--phone-file",
+            "nargs": "?",
+            "type": str,
+            "default": None,
+            "help": "Write list of symbols (in IPA strings) to file"
+        },
+        {
+            "name": "--word-cleaner-file",
+            "nargs": "?",
+            "type": str,
+            "default": None,
+            "help": "Apply replacements from the given file to words"
+        },
+        {
+            "name": "--ipa-cleaner-file",
+            "nargs": "?",
+            "type": str,
+            "default": None,
+            "help": "Apply replacements from the given file to IPA strings"
         },
         {
             "name": "--format",
@@ -122,7 +146,10 @@ class IPACleaner(CommandLineTool):
         # get options
         lexicon = self.vargs["lexicon"]
         output_file_path = self.vargs["output_file"]
-        phones_file_path = self.vargs["phones_file"]
+        letter_file_path = self.vargs["letter_file"]
+        phone_file_path = self.vargs["phone_file"]
+        word_cleaner_path = self.vargs["word_cleaner_file"]
+        ipa_cleaner_path = self.vargs["ipa_cleaner_file"]
         all_phones = self.vargs["all_phones"]
         quiet = self.vargs["quiet"]
         print_stats = self.vargs["stats"] 
@@ -134,8 +161,22 @@ class IPACleaner(CommandLineTool):
         word_index = self.vargs["word_index"]
         ipa_index = self.vargs["ipa_index"]
 
+        # load cleaner
+        if word_cleaner_path is None:
+            word_cleaner = DefaultWordCleaner()
+        else:
+            word_cleaner = UniCleaner(word_cleaner_path)
+        if ipa_cleaner_path is None:
+            ipa_cleaner = DefaultIPACleaner()
+        else:
+            ipa_cleaner = UniCleaner(ipa_cleaner)
+
         # read lexicon and clean raw IPA strings
-        lexi = Lexicon(clean=False)
+        lexi = Lexicon(
+            clean=False,
+            word_cleaner=word_cleaner,
+            ipa_cleaner=ipa_cleaner,
+        )
         lexi.read_file(
             lexicon_file_path=lexicon,
             comment=comment,
@@ -174,10 +215,14 @@ class IPACleaner(CommandLineTool):
                 for d in formatted_data:
                     print(d)
 
+        # save letters to file
+        if letter_file_path is not None:
+            write_file(lexi.format_letters(), letter_file_path)
+
         # save phones to file
-        if phones_file_path is not None:
+        if phone_file_path is not None:
             p_template = "{CIPA}" if all_phones else template
-            write_file(lexi.format_phones(p_template), phones_file_path)
+            write_file(lexi.format_phones(p_template), phone_file_path)
 
         # print statistics if requested
         if print_stats:
@@ -194,7 +239,7 @@ class IPACleaner(CommandLineTool):
 
 
 def main():
-    IPACleaner().run()
+    LexCleaner().run()
 
 if __name__ == "__main__":
     main()

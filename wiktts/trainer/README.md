@@ -58,40 +58,57 @@ Invoke with ``--help`` to get the list of available options:
 ```bash
 $ python -m wiktts.trainer --help
 
-TBW
+usage: __main__.py [-h] [--script [SCRIPT]] [--include-chars [INCLUDE_CHARS]]
+                   [--comment [COMMENT]] [--delimiter [DELIMITER]]
+                   [--word-index [WORD_INDEX]] [--ipa-index [IPA_INDEX]]
+                   [--train-size-int [TRAIN_SIZE_INT]]
+                   [--train-size-perc [TRAIN_SIZE_PERC]] [--quiet] [--stats]
+                   [--script-only]
+                   g2ptool lexicon outputdir
 
+Prepare train/test/symbol files for LTS/G2P tools.
+
+positional arguments:
+  g2ptool               G2P tool [phonetisaurus|sequitur]
+  lexicon               Input lexicon file
+  outputdir             Write output files to this directory
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --script [SCRIPT]     Output Bash script to run G2P tool with given
+                        parameters
+  --include-chars [INCLUDE_CHARS]
+                        Include only the given IPA characters
+                        [all|cv|cvp|cvs|cvpl|cvsl|cvslw|cvslws] (default:
+                        'cv')
+  --comment [COMMENT]   Ignore lines in the lexicon file starting with this
+                        string (default: '#')
+  --delimiter [DELIMITER]
+                        Field delimiter of the lexicon file (default: '\t')
+  --word-index [WORD_INDEX]
+                        Field index of the word (default: 0)
+  --ipa-index [IPA_INDEX]
+                        Field index of the IPA string (default: 1)
+  --train-size-int [TRAIN_SIZE_INT]
+                        Size of the train set, in words
+  --train-size-perc [TRAIN_SIZE_PERC]
+                        Size of the train set relative to valid lexicon size
+                        (default: 0.9)
+  --quiet               Do not print results to stdout
+  --stats               Print statistics
+  --script-only         Only output the Bash script
 ```
 
 ## Example
 
-Assuming a clean lexicon file ``enwiktionary-20160407.lex.clean`` containing:
-
-```
-...
-Aachen	ˈɑːkən
-Aalesund	ˈɔ.ləˌsʊn
-Aalst	ɑlst
-Aar	ɑɹ
-Aarau	ˈaːra
-Aare	ˈɑ.ɹə
-Aarhus	ˈɔːˌhuːs
-Aaron	ˈɛəɹən
-Aaronite	ˈeəɹn̩aɪt
-Ab	ɑb
-Ababda	ə.ˈbæb.də
-...
-```
-
-invoking the following command:
+Invoking the following command:
 
 ```bash
 $ python -m wiktts.trainer sequitur enwiktionary-20160407.lex.clean /tmp/
-```
 
-will produce:
-
-```
-TBW
+Created file: /tmp/enwiktionary-20160407.lex.train
+Created file: /tmp/enwiktionary-20160407.lex.test
+Created file: /tmp/enwiktionary-20160407.lex.symbols
 ```
 
 

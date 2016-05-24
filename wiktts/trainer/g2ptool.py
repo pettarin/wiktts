@@ -7,6 +7,8 @@ TBW
 
 from __future__ import absolute_import
 from __future__ import print_function
+import io
+import os
 import random
 
 from ipapy import IPA_TO_UNICODE
@@ -26,7 +28,9 @@ G2P_TOOLS = [
 FILTER_IPA_CHARS = [
     u"all",
     u"cv",
+    u"cvp",
     u"cvs",
+    u"cvpl",
     u"cvsl",
     u"cvslw",
     u"cvslws",
@@ -37,16 +41,37 @@ class G2PTool(object):
     def __init__(self, lexicon, include_chars=None, mapper_name=None, train_size=0.9):
         self.lexicon = lexicon
         self.include_chars = include_chars
+        self.filtered_lexicon_entries = []
         self.mapper_name = mapper_name
         self.mapper = None
         self.train_symbol_set = set()
         self.test_symbol_set = set()
         self.train = []
         self.test = []
+        self._filter_lexicon_entries()
         self.generate_sets(train_size=train_size)
 
+    def _filter_lexicon_entries(self):
+        valid = self.lexicon.cleaned_valid
+        if self.include_chars in [u"cv", u"cns_vwl", u"letters"]:
+            self.filtered_lexicon_entries = [(e.cleaned_word_unicode, e.cleaned_ipastring.cns_vwl) for e in valid]
+        elif self.include_chars in [u"cvp", u"cns_vwl_pstr"]:
+            self.filtered_lexicon_entries = [(e.cleaned_word_unicode, e.cleaned_ipastring.cns_vwl_pstr) for e in valid]
+        elif self.include_chars in [u"cvs", u"cns_vwl_str"]:
+            self.filtered_lexicon_entries = [(e.cleaned_word_unicode, e.cleaned_ipastring.cns_vwl_str) for e in valid]
+        elif self.include_chars in [u"cvpl", u"cns_vwl_pstr_long"]:
+            self.filtered_lexicon_entries = [(e.cleaned_word_unicode, e.cleaned_ipastring.cns_vwl_pstr_long) for e in valid]
+        elif self.include_chars in [u"cvsl", u"cns_vwl_str_len"]:
+            self.filtered_lexicon_entries = [(e.cleaned_word_unicode, e.cleaned_ipastring.cns_vwl_str_len) for e in valid]
+        elif self.include_chars in [u"cvslw", u"cns_vwl_str_len_wb"]:
+            self.filtered_lexicon_entries = [(e.cleaned_word_unicode, e.cleaned_ipastring.cns_vwl_str_len_wb) for e in valid]
+        elif self.include_chars in [u"cvslws", u"cns_vwl_str_len_wb_sb"]:
+            self.filtered_lexicon_entries = [(e.cleaned_word_unicode, e.cleaned_ipastring.cns_vwl_str_len_wb_sb) for e in valid]
+        else:
+            self.filtered_lexicon_entries = [(e.cleaned_word_unicode, e.cleaned_ipastring) for e in valid]
+        
     def generate_sets(self, train_size):
-        le_size = len(self.lexicon.cleaned_valid)
+        le_size = len(self.filtered_lexicon_entries)
         if isinstance(train_size, int):
             if train_size > le_size:
                 raise ValueError("The given train size (%d) is greater than the valid lexicon size (%d)." % (train_size, le_size))
@@ -56,12 +81,20 @@ class G2PTool(object):
         else:
             raise TypeError("Parameter train_size must be an int or a float.")
         # make a copy to avoid changing the original object
-        l = self.lexicon.cleaned_valid
-        random.shuffle(l)
-        self.train = l[:tr_size]
-        self.test = l[tr_size:]
+        random.shuffle(self.filtered_lexicon_entries)
+        self.train = self.filtered_lexicon_entries[:tr_size]
+        self.test = self.filtered_lexicon_entries[tr_size:]
         self._set_symbol_set()
         self._set_mapper()
+
+    def _set_symbol_set(self):
+        def cs(entries):
+            cs_chars = set()
+            for e in entries:
+                cs_chars |= set([c for c in e[1]])
+            return cs_chars
+        self.train_symbol_set = cs(self.train)
+        self.test_symbol_set = cs(self.test)
 
     def _set_mapper(self):
         if self.mapper_name is None:
@@ -70,30 +103,6 @@ class G2PTool(object):
             for c in self.symbol_set:
                 self.mapper[c.descriptors] = u"%03d" % i
                 i += 1
-
-    def _filter_ipa_chars(self, lexicon_entry):
-        if self.include_chars in [u"cv", u"cns_vwl", u"letters"]:
-            s = lexicon_entry.cleaned_ipastring.cns_vwl
-        elif self.include_chars in [u"cvs", u"cns_vwl_str"]:
-            s = lexicon_entry.cleaned_ipastring.cns_vwl_str
-        elif self.include_chars in [u"cvsl", u"cns_vwl_str_len"]:
-            s = lexicon_entry.cleaned_ipastring.cns_vwl_str_len
-        elif self.include_chars in [u"cvslw", u"cns_vwl_str_len_wb"]:
-            s = lexicon_entry.cleaned_ipastring.cns_vwl_str_len_wb
-        elif self.include_chars in [u"cvslws", u"cns_vwl_str_len_wb_sb"]:
-            s = lexicon_entry.cleaned_ipastring.cns_vwl_str_len_wb_sb
-        else:
-            s = lexicon_entry.cleaned_ipastring
-        return s
-
-    def _set_symbol_set(self):
-        def cs(entries):
-            cs_chars = set()
-            for e in entries:
-                cs_chars |= set([c for c in self._filter_ipa_chars(e)])
-            return cs_chars
-        self.train_symbol_set = cs([e for e in self.train if e.cleaned_is_valid])
-        self.test_symbol_set = cs([e for e in self.test if e.cleaned_is_valid])
 
     @property
     def train_size(self):
@@ -136,6 +145,15 @@ class G2PTool(object):
             acc.append(u"%s\t%s\t%s" % (self.mapper[k], uni_char, ipa_char.name))
         return acc
 
+    def format_script(self, parameters={}):
+        raise NotImplementedError("You must use a concrete subclass of G2PTool")
+
+    @classmethod
+    def load_template(self, path):
+        with io.open(path, "r", encoding="utf-8") as template_file:
+            contents = template_file.read()
+        return contents
+
 
 
 class G2PPhonetisaurus(G2PTool):
@@ -143,22 +161,38 @@ class G2PPhonetisaurus(G2PTool):
     def _format_g2p_input(self, entries):
         acc = []
         for e in entries:
-            word = e.word
-            phones = [self.mapper[c.descriptors] for c in self._filter_ipa_chars(e)]
+            word = e[0]
+            phones = [self.mapper[c.descriptors] for c in e[1]]
             acc.append(u"%s\t%s" % (word, u" ".join(phones)))
         return acc
 
 
 
+
 class G2PSequitur(G2PTool):
+
+    DEFAULT_SCRIPT_NAME = u"run_sequitur.sh"
+
+    SCRIPT_TEMPLATE_FILE_PATH = u"templates/run_sequitur.sh"
 
     def _format_g2p_input(self, entries):
         acc = []
         for e in entries:
-            word = e.word
-            phones = [self.mapper[c.descriptors] for c in self._filter_ipa_chars(e)]
+            # NOTE sequitur does not allow spaces in word or phoneme symbol!
+            # TODO warn the user
+            word = e[0].replace(u" ", u"")
+            phones = [self.mapper[c.descriptors] for c in e[1]]
             acc.append(u"%s %s" % (word, u" ".join(phones)))
         return acc
+
+    @classmethod
+    def format_script(cls, parameters={}):
+        template = cls.load_template(os.path.join(os.path.dirname(__file__), cls.SCRIPT_TEMPLATE_FILE_PATH))
+        return ([template.format(
+            BASE=parameters["base"],
+            DEVEL=parameters["devel"],
+            MAXLEVEL=parameters["maxlevel"]
+        )], cls.DEFAULT_SCRIPT_NAME)
 
 
 

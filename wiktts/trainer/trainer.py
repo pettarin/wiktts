@@ -51,11 +51,18 @@ class Trainer(CommandLineTool):
             "help": "Write output files to this directory"
         },
         {
+            "name": "--script",
+            "nargs": "?",
+            "type": str,
+            "default": None,
+            "help": "Output Bash script to run G2P tool with given parameters"
+        },
+        {
             "name": "--include-chars",
             "nargs": "?",
             "type": str,
-            "default": u"cvsl",
-            "help": "Include only the given IPA characters [%s] (default: 'cvsl')" % u"|".join(FILTER_IPA_CHARS)
+            "default": u"cv",
+            "help": "Include only the given IPA characters [%s] (default: 'cv')" % u"|".join(FILTER_IPA_CHARS)
         },
         {
             "name": "--comment",
@@ -109,6 +116,11 @@ class Trainer(CommandLineTool):
             "action": "store_true",
             "help": "Print statistics"
         },
+        {
+            "name": "--script-only",
+            "action": "store_true",
+            "help": "Only output the Bash script"
+        },
     ]
 
     def actual_command(self):
@@ -124,6 +136,8 @@ class Trainer(CommandLineTool):
         ipa_index = self.vargs["ipa_index"]
         train_size = self.vargs["train_size_perc"] if self.vargs["train_size_int"] is None else self.vargs["train_size_int"]
         include_chars = self.vargs["include_chars"]
+        script = self.vargs["script"]
+        script_only = self.vargs["script_only"]
 
         # make sure
         if g2ptool not in [u"phonetisaurus", u"sequitur"]:
@@ -134,50 +148,60 @@ class Trainer(CommandLineTool):
             # TODO create dir instead?
             self.error("The output directory does not exist! (Got: '%s')" % output_dir_path)
 
-        # read lexicon and clean raw IPA strings
-        lexi = Lexicon(clean=True)
-        lexi.read_file(
-            lexicon_file_path=lexicon,
-            comment=comment,
-            delimiter=delimiter,
-            word_index=word_index,
-            ipa_index=ipa_index
-        )
-
-        # create training, test, and symbol sets
+        # output file names
+        base = os.path.join(output_dir_path, os.path.basename(lexicon))
+        train_file_path = base + u".train"
+        test_file_path = base + u".test"
+        symb_file_path = base + u".symbols"
+        script_file_path = None
         if g2ptool == u"phonetisaurus":
             cls = G2PPhonetisaurus
         else:
             cls = G2PSequitur
-        g2ptool = cls(
-            lexicon=lexi,
-            include_chars=include_chars,
-            mapper_name=None,
-            train_size=train_size
-        )
 
-        # output to file
-        base = os.path.join(output_dir_path, os.path.basename(lexicon))
-       
-        train_file_path = base + u".train"
-        write_file(g2ptool.format_train(), train_file_path)
-        
-        test_file_path = base + u".test"
-        write_file(g2ptool.format_test(), test_file_path)
+        if not script_only:
+            # read lexicon and clean raw IPA strings
+            lexi = Lexicon(clean=True)
+            lexi.read_file(
+                lexicon_file_path=lexicon,
+                comment=comment,
+                delimiter=delimiter,
+                word_index=word_index,
+                ipa_index=ipa_index
+            )
 
-        symb_file_path = base + u".symbols"
-        write_file(g2ptool.format_symbol_set(), symb_file_path)
+            # create training, test, and symbol sets
 
-        # output as requested
-        #if output_file_path is not None:
-        #    write_file(formatted_data, output_file_path)
-        if not quiet:
-            print("Created file: %s" % train_file_path)
-            print("Created file: %s" % test_file_path)
-            print("Created file: %s" % symb_file_path)
+            g2ptool = cls(
+                lexicon=lexi,
+                include_chars=include_chars,
+                mapper_name=None,
+                train_size=train_size
+            )
+            write_file(g2ptool.format_train(), train_file_path)
+            write_file(g2ptool.format_test(), test_file_path)
+            write_file(g2ptool.format_symbol_set(), symb_file_path)
+            if not quiet:
+                print("Created file: %s" % train_file_path)
+                print("Created file: %s" % test_file_path)
+                print("Created file: %s" % symb_file_path)
+
+        if script is not None:
+            parameters = {"base": os.path.basename(base), "devel": "5", "maxlevel": "8"}
+            for p in script.split(u","):
+                try:
+                    k, v = p.split(u"=")
+                    parameters[k] = v
+                except:
+                    pass
+            contents, script_name = cls.format_script(parameters=parameters)
+            script_file_path = os.path.join(output_dir_path, script_name)
+            write_file(contents, script_file_path)
+            if not quiet:
+                print("Created file: %s" % script_file_path)
 
         # print statistics if requested
-        if print_stats:
+        if (print_stats) and (not script_only):
             total = len(lexi)
             print("Words:")
             print("  Total: %d" % (g2ptool.train_size + g2ptool.test_size))
