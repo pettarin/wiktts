@@ -1,6 +1,6 @@
 # trainer 
 
-Prepare train/test/symbol files for LTS/G2P tools.
+Prepare train/test/symbol files for ML tools.
 
 
 ## Input
@@ -20,26 +20,27 @@ By default:
 You can change these defaults with the ``--comment``, ``--delimiter``, and
 ``--word-index``/``--ipa-index`` parameters.
 
-Currently, the following LTS/G2P tools are supported:
+Currently, the following tools are supported:
 
-* [Phonetisaurus](https://github.com/AdolfVonKleist/Phonetisaurus)
+* [Phonetisaurus](https://github.com/AdolfVonKleist/Phonetisaurus) (Bash script TBD)
 * [Sequitur](https://www-i6.informatik.rwth-aachen.de/web/Software/g2p.html)
 
 
 ## Output
 
 A set of files will be created in the given directory,
-with a syntax appropriate for the specified LTS/G2P tool:
+with a syntax appropriate for the specified ML tool:
 
-* a **train set file**, used to train a G2P model;
-* a **test set file**, used to test the trained G2P model; and
-* a **symbol file**, containing the mapping between item and Unicode IPA character.
+* a **train set file**, used to train a ML model;
+* a **test set file**, used to test the trained ML model;
+* a **symbol file**, containing the map from Unicode IPA character to its ML symbol; and
+* (optional) a **Bash script** to train/test the resulting ML model.
 
 
 ## Usage
 
 ```bash
-$ python -m wiktts.trainer G2PTOOL LEXICON OUTPUTDIR [OPTIONS]
+$ python -m wiktts.trainer TOOL LEXICON OUTPUTDIR [OPTIONS]
 ```
 
 Example:
@@ -58,25 +59,24 @@ Invoke with ``--help`` to get the list of available options:
 ```bash
 $ python -m wiktts.trainer --help
 
-usage: __main__.py [-h] [--script [SCRIPT]] [--include-chars [INCLUDE_CHARS]]
+usage: __main__.py [-h] [--include-chars [INCLUDE_CHARS]]
                    [--comment [COMMENT]] [--delimiter [DELIMITER]]
                    [--word-index [WORD_INDEX]] [--ipa-index [IPA_INDEX]]
                    [--train-size-int [TRAIN_SIZE_INT]]
-                   [--train-size-perc [TRAIN_SIZE_PERC]] [--quiet] [--stats]
-                   [--script-only]
-                   g2ptool lexicon outputdir
+                   [--train-size-frac [TRAIN_SIZE_FRAC]] [--quiet] [--stats]
+                   [--output-script-only] [--output-script]
+                   [--script-parameters [SCRIPT_PARAMETERS]]
+                   tool lexicon outputdir
 
-Prepare train/test/symbol files for LTS/G2P tools.
+Prepare train/test/symbol files for ML tools.
 
 positional arguments:
-  g2ptool               G2P tool [phonetisaurus|sequitur]
+  tool                  ML tool [phonetisaurus|sequitur]
   lexicon               Input lexicon file
   outputdir             Write output files to this directory
 
 optional arguments:
   -h, --help            show this help message and exit
-  --script [SCRIPT]     Output Bash script to run G2P tool with given
-                        parameters
   --include-chars [INCLUDE_CHARS]
                         Include only the given IPA characters
                         [all|cv|cvp|cvs|cvpl|cvsl|cvslw|cvslws] (default:
@@ -91,24 +91,83 @@ optional arguments:
                         Field index of the IPA string (default: 1)
   --train-size-int [TRAIN_SIZE_INT]
                         Size of the train set, in words
-  --train-size-perc [TRAIN_SIZE_PERC]
+  --train-size-frac [TRAIN_SIZE_FRAC]
                         Size of the train set relative to valid lexicon size
                         (default: 0.9)
   --quiet               Do not print results to stdout
   --stats               Print statistics
-  --script-only         Only output the Bash script
+  --output-script-only  Only output the Bash script to run the ML tool
+  --output-script       Output the Bash script to run the ML tool
+  --script-parameters [SCRIPT_PARAMETERS]
+                        Parameters to configure the Bash script to run the ML
+                        tool
 ```
 
-## Example
+## Examples
 
-Invoking the following command:
+Create train/test/symbol files for Sequitur G2P:
 
 ```bash
-$ python -m wiktts.trainer sequitur enwiktionary-20160407.lex.clean /tmp/
+$ python -m wiktts.trainer sequitur enwiktionary-20160407.lex /tmp/
 
 Created file: /tmp/enwiktionary-20160407.lex.train
 Created file: /tmp/enwiktionary-20160407.lex.test
 Created file: /tmp/enwiktionary-20160407.lex.symbols
+```
+
+Print statistics:
+
+```bash
+$ python -m wiktts.trainer sequitur enwiktionary-20160407.lex /tmp/ --stats
+
+Words:
+  Total: 33871
+  Train: 30483
+  Test:  3388
+Symbols:
+  Total: 88
+  Train: 87
+  Test:  63
+Created file: /tmp/enwiktionary-20160407.lex.train
+Created file: /tmp/enwiktionary-20160407.lex.test
+Created file: /tmp/enwiktionary-20160407.lex.symbols
+```
+
+Split the given lexicon into 80% train + 20% test (instead of default 90% + 10%):
+
+```bash
+$ python -m wiktts.trainer sequitur enwiktionary-20160407.lex /tmp/ --stats --train-size-frac 0.8
+
+Words:
+  Total: 33871
+  Train: 27096
+  Test:  6775
+Symbols:
+  Total: 88
+  Train: 84
+  Test:  72
+Created file: /tmp/enwiktionary-20160407.lex.train
+Created file: /tmp/enwiktionary-20160407.lex.test
+Created file: /tmp/enwiktionary-20160407.lex.symbols
+```
+
+Output a Bash script to run Sequitur G2P:
+
+```bash
+$ python -m wiktts.trainer sequitur enwiktionary-20160407.lex /tmp/ --output-script
+
+Created file: /tmp/enwiktionary-20160407.lex.train
+Created file: /tmp/enwiktionary-20160407.lex.test
+Created file: /tmp/enwiktionary-20160407.lex.symbols
+Created file: /tmp/run_sequitur.sh
+```
+
+Create only the Bash script:
+
+```bash
+$ python -m wiktts.trainer sequitur enwiktionary-20160407.lex.clean  /tmp/ --output-script-only
+
+Created file: /tmp/run_sequitur.sh
 ```
 
 

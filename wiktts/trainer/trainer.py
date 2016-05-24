@@ -15,10 +15,10 @@ from wiktts import write_file
 from wiktts.commandlinetool import CommandLineTool
 from wiktts.lexicon import PLACEHOLDERS
 from wiktts.lexicon import Lexicon
-from wiktts.trainer.g2ptool import FILTER_IPA_CHARS
-from wiktts.trainer.g2ptool import G2P_TOOLS
-from wiktts.trainer.g2ptool import G2PPhonetisaurus
-from wiktts.trainer.g2ptool import G2PSequitur
+from wiktts.trainer.tool import FILTER_IPA_CHARS
+from wiktts.trainer.tool import TOOLS
+from wiktts.trainer.tool import ToolPhonetisaurus
+from wiktts.trainer.tool import ToolSequitur
 
 __author__ = "Alberto Pettarin"
 __copyright__ = "Copyright 2016, Alberto Pettarin (www.albertopettarin.it)"
@@ -27,14 +27,14 @@ __email__ = "alberto@albertopettarin.it"
 
 class Trainer(CommandLineTool):
 
-    AP_DESCRIPTION = u"Prepare train/test/symbol files for LTS/G2P tools."
+    AP_DESCRIPTION = u"Prepare train/test/symbol files for ML tools."
     AP_ARGUMENTS = [
         {
-            "name": "g2ptool",
+            "name": "tool",
             "nargs": None,
             "type": str,
             "default": None,
-            "help": "G2P tool [%s]" % u"|".join(G2P_TOOLS)
+            "help": "ML tool [%s]" % u"|".join(TOOLS)
         },
         {
             "name": "lexicon",
@@ -49,13 +49,6 @@ class Trainer(CommandLineTool):
             "type": str,
             "default": None,
             "help": "Write output files to this directory"
-        },
-        {
-            "name": "--script",
-            "nargs": "?",
-            "type": str,
-            "default": None,
-            "help": "Output Bash script to run G2P tool with given parameters"
         },
         {
             "name": "--include-chars",
@@ -100,7 +93,7 @@ class Trainer(CommandLineTool):
             "help": "Size of the train set, in words"
         },
         {
-            "name": "--train-size-perc",
+            "name": "--train-size-frac",
             "nargs": "?",
             "type": float,
             "default": 0.9,
@@ -117,15 +110,27 @@ class Trainer(CommandLineTool):
             "help": "Print statistics"
         },
         {
-            "name": "--script-only",
+            "name": "--output-script-only",
             "action": "store_true",
-            "help": "Only output the Bash script"
+            "help": "Only output the Bash script to run the ML tool"
+        },
+        {
+            "name": "--output-script",
+            "action": "store_true",
+            "help": "Output the Bash script to run the ML tool"
+        },
+        {
+            "name": "--script-parameters",
+            "nargs": "?",
+            "type": str,
+            "default": u"",
+            "help": "Parameters to configure the Bash script to run the ML tool"
         },
     ]
 
     def actual_command(self):
         # get options
-        g2ptool = self.vargs["g2ptool"]
+        tool = self.vargs["tool"]
         lexicon = self.vargs["lexicon"]
         output_dir_path =  self.vargs["outputdir"]
         quiet = self.vargs["quiet"]
@@ -134,14 +139,15 @@ class Trainer(CommandLineTool):
         delimiter = self.vargs["delimiter"]
         word_index = self.vargs["word_index"]
         ipa_index = self.vargs["ipa_index"]
-        train_size = self.vargs["train_size_perc"] if self.vargs["train_size_int"] is None else self.vargs["train_size_int"]
+        train_size = self.vargs["train_size_frac"] if self.vargs["train_size_int"] is None else self.vargs["train_size_int"]
         include_chars = self.vargs["include_chars"]
-        script = self.vargs["script"]
-        script_only = self.vargs["script_only"]
+        output_script = self.vargs["output_script"]
+        output_script_only = self.vargs["output_script_only"]
+        script_parameters = self.vargs["script_parameters"]
 
         # make sure
-        if g2ptool not in [u"phonetisaurus", u"sequitur"]:
-            self.error("The available G2P tools are: %s. (Got: '%s')" % (G2P_TOOLS, g2ptool))
+        if tool not in [u"phonetisaurus", u"sequitur"]:
+            self.error("The available tools are: %s. (Got: '%s')" % (TOOLS, tool))
 
         # make sure output directory exists
         if not os.path.isdir(output_dir_path):
@@ -154,12 +160,12 @@ class Trainer(CommandLineTool):
         test_file_path = base + u".test"
         symb_file_path = base + u".symbols"
         script_file_path = None
-        if g2ptool == u"phonetisaurus":
-            cls = G2PPhonetisaurus
+        if tool == u"phonetisaurus":
+            cls = ToolPhonetisaurus
         else:
-            cls = G2PSequitur
+            cls = ToolSequitur
 
-        if not script_only:
+        if not output_script_only:
             # read lexicon and clean raw IPA strings
             lexi = Lexicon(clean=True)
             lexi.read_file(
@@ -169,26 +175,39 @@ class Trainer(CommandLineTool):
                 word_index=word_index,
                 ipa_index=ipa_index
             )
-
             # create training, test, and symbol sets
-
-            g2ptool = cls(
+            tool_formatter = cls(
                 lexicon=lexi,
                 include_chars=include_chars,
                 mapper_name=None,
                 train_size=train_size
             )
-            write_file(g2ptool.format_train(), train_file_path)
-            write_file(g2ptool.format_test(), test_file_path)
-            write_file(g2ptool.format_symbol_set(), symb_file_path)
+            write_file(tool_formatter.format_train(), train_file_path)
+            write_file(tool_formatter.format_test(), test_file_path)
+            write_file(tool_formatter.format_symbol_set(), symb_file_path)
+            # print statistics if requested
+            if print_stats:
+                total = len(lexi)
+                print("Words:")
+                print("  Total: %d" % (tool_formatter.train_size + tool_formatter.test_size))
+                print("  Train: %d" % tool_formatter.train_size)
+                print("  Test:  %d" % tool_formatter.test_size)
+                print("Symbols:")
+                print("  Total: %d" % (tool_formatter.symbol_set_size))
+                print("  Train: %d" % (tool_formatter.train_symbol_set_size))
+                print("  Test:  %d" % (tool_formatter.test_symbol_set_size))
             if not quiet:
                 print("Created file: %s" % train_file_path)
                 print("Created file: %s" % test_file_path)
                 print("Created file: %s" % symb_file_path)
 
-        if script is not None:
-            parameters = {"base": os.path.basename(base), "devel": "5", "maxlevel": "8"}
-            for p in script.split(u","):
+        if output_script or output_script_only:
+            parameters = {
+                "base": os.path.basename(base),
+                "sequitur_devel": "5",
+                "sequitur_maxlevel": "8"
+            }
+            for p in script_parameters.split(u","):
                 try:
                     k, v = p.split(u"=")
                     parameters[k] = v
@@ -199,18 +218,6 @@ class Trainer(CommandLineTool):
             write_file(contents, script_file_path)
             if not quiet:
                 print("Created file: %s" % script_file_path)
-
-        # print statistics if requested
-        if (print_stats) and (not script_only):
-            total = len(lexi)
-            print("Words:")
-            print("  Total: %d" % (g2ptool.train_size + g2ptool.test_size))
-            print("  Train: %d" % g2ptool.train_size)
-            print("  Test:  %d" % g2ptool.test_size)
-            print("Symbols:")
-            print("  Total: %d" % (g2ptool.symbol_set_size))
-            print("  Train: %d" % (g2ptool.train_symbol_set_size))
-            print("  Test:  %d" % (g2ptool.test_symbol_set_size))
 
 
 

@@ -26,7 +26,7 @@ __email__ = "alberto@albertopettarin.it"
 
 class LexCleaner(CommandLineTool):
 
-    AP_DESCRIPTION = u"Clean and normalize IPA strings from a lexicon file."
+    AP_DESCRIPTION = u"Clean and normalize a pronunciation lexicon."
     AP_ARGUMENTS = [
         {
             "name": "lexicon",

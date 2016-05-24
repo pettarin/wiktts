@@ -20,7 +20,7 @@ __copyright__ = "Copyright 2016, Alberto Pettarin (www.albertopettarin.it)"
 __license__ = "MIT"
 __email__ = "alberto@albertopettarin.it"
 
-G2P_TOOLS = [
+TOOLS = [
     u"phonetisaurus",
     u"sequitur"
 ]
@@ -36,7 +36,7 @@ FILTER_IPA_CHARS = [
     u"cvslws",
 ]
 
-class G2PTool(object):
+class Tool(object):
 
     def __init__(self, lexicon, include_chars=None, mapper_name=None, train_size=0.9):
         self.lexicon = lexicon
@@ -129,7 +129,7 @@ class G2PTool(object):
         return len(self.symbol_set)
 
     def _format_g2p_input(self, entries):
-        raise NotImplementedError("You must use a concrete subclass of G2PTool")
+        raise NotImplementedError("You must use a concrete subclass of Tool")
 
     def format_train(self):
         return self._format_g2p_input(self.train)
@@ -146,7 +146,7 @@ class G2PTool(object):
         return acc
 
     def format_script(self, parameters={}):
-        raise NotImplementedError("You must use a concrete subclass of G2PTool")
+        raise NotImplementedError("You must use a concrete subclass of Tool")
 
     @classmethod
     def load_template(self, path):
@@ -156,7 +156,7 @@ class G2PTool(object):
 
 
 
-class G2PPhonetisaurus(G2PTool):
+class ToolPhonetisaurus(Tool):
 
     def _format_g2p_input(self, entries):
         acc = []
@@ -169,7 +169,7 @@ class G2PPhonetisaurus(G2PTool):
 
 
 
-class G2PSequitur(G2PTool):
+class ToolSequitur(Tool):
 
     DEFAULT_SCRIPT_NAME = u"run_sequitur.sh"
 
@@ -190,8 +190,8 @@ class G2PSequitur(G2PTool):
         template = cls.load_template(os.path.join(os.path.dirname(__file__), cls.SCRIPT_TEMPLATE_FILE_PATH))
         return ([template.format(
             BASE=parameters["base"],
-            DEVEL=parameters["devel"],
-            MAXLEVEL=parameters["maxlevel"]
+            DEVEL=parameters["sequitur_devel"],
+            MAXLEVEL=parameters["sequitur_maxlevel"]
         )], cls.DEFAULT_SCRIPT_NAME)
 
 

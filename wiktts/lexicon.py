@@ -39,7 +39,7 @@ PLACEHOLDERS = [
     "{RCVSL}",      # cns_vwl_str_len repr of raw IPA string (Unicode)
     "{RCVSLW}",     # cns_vwl_str_len_wb repr of raw IPA string (Unicode)
     "{RCVSLWS}",    # cns_vwl_str_len_wb_sb repr of raw IPA string (Unicode)
-    "{CIPA}",       # cleaned Unicode string (Unicode)
+    "{CUNI}",       # cleaned Unicode string (Unicode)
     "{CIPA}",       # full repr of cleaned+normalized IPA string (Unicode)
     "{CCV}",        # cns_vwl repr of cleaned+normalized IPA string (Unicode)
     "{CCVP}",       # cns_vwl_pstr repr of cleaned+normalized IPA string (Unicode)

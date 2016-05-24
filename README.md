@@ -21,7 +21,7 @@ This repository contains the following Python 2.7.x/3.5.x tools:
 * ``wiktts.mw.splitter`` split a [MediaWiki dump](https://dumps.wikimedia.org/backup-index.html) into chunks
 * ``wiktts.mw.miner``: mine [IPA](http://www.internationalphoneticassociation.org/) strings from a MediaWiki dump file
 * ``wiktts.lexcleaner``: clean+normalize a pronunciation lexicon
-* ``wiktts.trainer``: prepare train/test/symbol sets for LTS/G2P tools (e.g., Phonetisaurus or Sequitur)
+* ``wiktts.trainer``: prepare train/test/symbol sets for ML tools (e.g., Phonetisaurus or Sequitur)
 
 
 ## Dependencies
@@ -46,7 +46,7 @@ This repository contains the following Python 2.7.x/3.5.x tools:
     $ wget "https://dumps.wikimedia.org/enwiktionary/20160407/enwiktionary-20160407-pages-meta-current.xml.bz2"
     ```
 
-4. Install the LTS/G2P tool(s) you want to work with.
+4. Install the ML tool(s) you want to work with.
    Currently, ``wiktts.trainer`` outputs in formats readable by:
     * [Phonetisaurus](https://github.com/AdolfVonKleist/Phonetisaurus)
     * [Sequitur](https://www-i6.informatik.rwth-aachen.de/web/Software/g2p.html)
@@ -81,7 +81,7 @@ $ python -m wiktts.lexcleaner LEXICON [OPTIONS]
 ### wiktts.trainer
 
 ```bash
-$ python -m wiktts.trainer G2PTOOL LEXICON OUTPUTDIR [OPTIONS]
+$ python -m wiktts.trainer TOOL LEXICON OUTPUTDIR [OPTIONS]
 ```
 
 [Details](wiktts/trainer/README.md)
