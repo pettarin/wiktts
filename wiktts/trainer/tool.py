@@ -145,18 +145,35 @@ class Tool(object):
             acc.append(u"%s\t%s\t%s" % (self.mapper[k], uni_char, ipa_char.name))
         return acc
 
-    def format_script(self, parameters={}):
-        raise NotImplementedError("You must use a concrete subclass of Tool")
+    @classmethod
+    def format_script(cls, parameters):
+        template_file_path = os.path.join(os.path.dirname(__file__), cls.SCRIPT_TEMPLATE_FILE_PATH)
+        with io.open(template_file_path, "r", encoding="utf-8") as template_file:
+            template = template_file.read()
+        if u"base" not in parameters:
+            raise ValueError("The parameters dictionary does not contain a 'base' key.")
+        d = dict()
+        d.update(cls.DEFAULT_PARAMETERS)
+        d.update(parameters)
+        return ([cls._format_script_contents(template, d)], cls.DEFAULT_SCRIPT_NAME)
 
     @classmethod
-    def load_template(self, path):
-        with io.open(path, "r", encoding="utf-8") as template_file:
-            contents = template_file.read()
-        return contents
+    def _format_script_contents(cls, template, d):
+        raise NotImplementedError("You must override this function in concrete subclasses.")
 
 
 
 class ToolPhonetisaurus(Tool):
+
+    DEFAULT_SCRIPT_NAME = u"run_phonetisaurus.sh"
+
+    SCRIPT_TEMPLATE_FILE_PATH = u"templates/run_phonetisaurus.sh"
+
+    DEFAULT_PARAMETERS = {
+        "phonetisaurus_ngramorder": "8",
+        "phonetisaurus_smoothing": "FixKN",
+        "phonetisaurus_decoder": "fst_phi",
+    }
 
     def _format_g2p_input(self, entries):
         acc = []
@@ -166,6 +183,14 @@ class ToolPhonetisaurus(Tool):
             acc.append(u"%s\t%s" % (word, u" ".join(phones)))
         return acc
 
+    @classmethod
+    def _format_script_contents(cls, template, d):
+        return template.format(
+            BASE=d["base"],
+            NGRAMORDER=d["phonetisaurus_ngramorder"],
+            SMOOTHING=d["phonetisaurus_smoothing"],
+            DECODER=d["phonetisaurus_decoder"]
+        )
 
 
 
@@ -174,6 +199,11 @@ class ToolSequitur(Tool):
     DEFAULT_SCRIPT_NAME = u"run_sequitur.sh"
 
     SCRIPT_TEMPLATE_FILE_PATH = u"templates/run_sequitur.sh"
+
+    DEFAULT_PARAMETERS = {
+        "sequitur_devel": "5",
+        "sequitur_maxlevel": "8",
+    }
 
     def _format_g2p_input(self, entries):
         acc = []
@@ -186,13 +216,12 @@ class ToolSequitur(Tool):
         return acc
 
     @classmethod
-    def format_script(cls, parameters={}):
-        template = cls.load_template(os.path.join(os.path.dirname(__file__), cls.SCRIPT_TEMPLATE_FILE_PATH))
-        return ([template.format(
-            BASE=parameters["base"],
-            DEVEL=parameters["sequitur_devel"],
-            MAXLEVEL=parameters["sequitur_maxlevel"]
-        )], cls.DEFAULT_SCRIPT_NAME)
+    def _format_script_contents(cls, template, d):
+        return template.format(
+            BASE=d["base"],
+            DEVEL=d["sequitur_devel"],
+            MAXLEVEL=d["sequitur_maxlevel"]
+        )
 
 
 

@@ -6,10 +6,11 @@
 
 BASE="{BASE}"
 TRAIN="{BASE}.train"
-LOG="{BASE}.train.log"
-MAXLEVEL="{MAXLEVEL}"
 TEST="{BASE}.test"
+
+LOG="{BASE}.sequitur.log"
 MODELPREFIX="{BASE}.model."
+MAXLEVEL="{MAXLEVEL}"
 DEVEL="{DEVEL}%"
 
 ### NORMALLY YOU SHOULD NOT NEED TO EDIT BELOW THIS LINE
@@ -20,7 +21,9 @@ usage() {{
     echo "$ bash $0 test [LEVEL]"
     echo "$ bash $0 clean"
     echo ""
-    echo "  Default (max) level: {MAXLEVEL}"
+    echo "Parameters:"
+    echo "  maxlevel: {MAXLEVEL}"  
+    echo "  devel: {DEVEL}%"
     echo ""
     exit 2
 }}

@@ -202,15 +202,12 @@ class Trainer(CommandLineTool):
                 print("Created file: %s" % symb_file_path)
 
         if output_script or output_script_only:
-            parameters = {
-                "base": os.path.basename(base),
-                "sequitur_devel": "5",
-                "sequitur_maxlevel": "8"
-            }
+            parameters = {"base": os.path.basename(base)}
             for p in script_parameters.split(u","):
                 try:
                     k, v = p.split(u"=")
-                    parameters[k] = v
+                    key = u"%s_%s" % (tool, k)
+                    parameters[key] = v
                 except:
                     pass
             contents, script_name = cls.format_script(parameters=parameters)

@@ -22,7 +22,7 @@ You can change these defaults with the ``--comment``, ``--delimiter``, and
 
 Currently, the following tools are supported:
 
-* [Phonetisaurus](https://github.com/AdolfVonKleist/Phonetisaurus) (Bash script TBD)
+* [Phonetisaurus](https://github.com/AdolfVonKleist/Phonetisaurus)
 * [Sequitur](https://www-i6.informatik.rwth-aachen.de/web/Software/g2p.html)
 
 
