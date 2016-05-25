@@ -3,15 +3,57 @@
 Mining MediaWiki dumps to create better TTS engines (using Machine Learning)
 
 * Version: 0.0.4
-* Date: 2016-05-24
+* Date: 2016-05-25
 * Developer: [Alberto Pettarin](http://www.albertopettarin.it/)
 * License: the MIT License (MIT)
 * Contact: [click here](http://www.albertopettarin.it/contact.html)
 
 
-## Goal
+## Abstract 
 
-TBW
+MediaWiki sites (e.g.,
+[Wikipedia](https://en.wikipedia.org/)
+or
+[Wiktionary](https://en.wiktionary.org/)
+) contain a lot of information about
+the **pronunciation of words in several languages**:
+
+![IPA pronunciation for the word "pronunciation" from the English Wiktionary](imgs/mw.png)
+
+This information is described by "pronunciation tags",
+which contain the **phonetic/phonemic transcription** of the word,
+written using the
+[**International Phonetic Alphabet**](https://en.wikipedia.org/wiki/International_Phonetic_Alphabet)
+(IPA):
+
+```
+===Pronunciation===
+* {{IPA|/pɹəˌnʌn.siˈeɪ.ʃən/|lang=en}}, {{enPR|prə-nŭn'-sē-ā′-shən}}
+* {{IPA|/pɹəˌnʌn.ʃiˈeɪ.ʃən/|lang=en}}, {{enPR|prə-nŭn'-shē-ā′-shən}}
+* {{audio|En-us-pronunciation.ogg|Audio (US)|lang=en}}
+* {{rhymes|eɪʃən|lang=en}}
+* {{hyphenation|pro|nun|ci|a|tion|lang=en}}
+```
+
+This project provide tools to **extract** pronunciation information
+from MediaWiki dump files, to **clean** the mined IPA strings,
+and to **prepare** input files for **Machine Learning (ML) tools**
+used in computation linguistics and speech processing.
+
+Possible **applications** include:
+
+* improving existing open source/free software Text-To-Speech (TTS) tools,
+  for example
+  [espeak-ng](https://github.com/espeak-ng/espeak-ng) or
+  [idlak](https://github.com/bpotard/idlakhttps://github.com/bpotard/idlak),
+  by incorporating the mined pronunciation lexica and/or
+  Letter-To-Sound/Grapheme-To-Phoneme (LTS/G2P) models trained
+  from the mined pronunciation lexica;
+* creating TTS voices for "minority" languages;
+* creating MediaWiki bots to add a (tentative) IPA transcription to Wiktionary articles missing it;
+* creating MediaWiki bots to review the existing IPA transcription provided by a human editor;
+* building a crowdsourced CAPTCHA-like service to further refine the transcriptions and hence the derived models;
+* research projects in linguistics, phonology, natural language processing, speech synthesis, and speech processing.
 
 
 ## In The Box
@@ -42,7 +84,7 @@ This repository contains the following Python 2.7.x/3.5.x tools:
 
 3. Download the dump(s) you want to work on from [Wikimedia Downloads](https://dumps.wikimedia.org/backup-index.html):
     ```bash
-    $ cd dumps
+    $ cd wiktts/dumps
     $ wget "https://dumps.wikimedia.org/enwiktionary/20160407/enwiktionary-20160407-pages-meta-current.xml.bz2"
     ```
 
@@ -85,6 +127,38 @@ $ python -m wiktts.trainer TOOL LEXICON OUTPUTDIR [OPTIONS]
 ```
 
 [Details](wiktts/trainer/README.md)
+
+
+## Putting All Together 
+
+Note: you might want to use tmux/screen since some of the following commands
+will require several minutes/hours to run.
+
+```bash
+$ # clone the repo
+$ git clone https://github.com/pettarin/wiktts.git
+$ cd wiktts/dumps
+
+$ # download the English Wiktionary dump
+$ wget "https://dumps.wikimedia.org/enwiktionary/20160407/enwiktionary-20160407-pages-meta-current.xml.bz2"
+$ cd ..
+
+$ # extract the IPA strings (several minutes)
+$ python -m wiktts.mw.miner enwiktionary dumps/enwiktionary-20160407-pages-meta-current.xml.bz2 --output-file /tmp/enwiktionary-20160407.lex
+
+$ # clean the mined (word, IPA) pairs (several minutes)
+$ python -m wiktts.lexcleaner /tmp/enwiktionary-20160407.lex --output-file /tmp/enwiktionary-20160407.lex.clean
+
+$ # create train/test/symbol files for Sequitur G2P
+$ python -m wiktts.trainer sequitur /tmp/enwiktionary-20160407.lex.clean /tmp/ --output-script
+
+$ # train a G2P model using Sequitur G2P (several hours)
+$ cd /tmp
+$ bash run_sequitur.sh train
+
+$ # test the trained G2P model
+$ bash run_sequitur.sh test
+```
 
 
 ## License
