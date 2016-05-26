@@ -1,4 +1,4 @@
-# lexiconcleaner 
+# lexcleaner 
 
 **Clean and normalize a pronunciation lexicon** mined from a MediaWiki dump file.
 
@@ -53,13 +53,13 @@ while characters that are not IPA valid will be ignored.
 ## Usage
 
 ```bash
-$ python -m wiktts.ipacleaner LEXICON [OPTIONS]
+$ python -m wiktts.lexcleaner LEXICON [OPTIONS]
 ```
 
 Example:
 
 ```bash
-$ python -m wiktts.ipacleaner enwiktionary-20160407.lex --output-file enwiktionary-20160407.lex.clean
+$ python -m wiktts.lexcleaner enwiktionary-20160407.lex --output-file enwiktionary-20160407.lex.clean
 ```
 
 Processing big lexicon files (>100k words) might take a couple of minutes.
@@ -161,7 +161,7 @@ ab utili	æb ˈju.tl̩.i
 invoking the following command:
 
 ```bash
-$ python -m wiktts.ipacleaner enwiktionary-20160407.lex \
+$ python -m wiktts.lexcleaner enwiktionary-20160407.lex \
     --output-file enwiktionary-20160407.lex.clean \
     --letter-file enwiktionary-20160407.lex.letters \
     --phone-file enwiktionary-20160407.lex.phones
