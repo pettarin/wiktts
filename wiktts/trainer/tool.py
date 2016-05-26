@@ -52,7 +52,7 @@ class Tool(object):
         self.generate_sets(train_size=train_size)
 
     def _filter_lexicon_entries(self):
-        valid = self.lexicon.cleaned_valid
+        valid = self.lexicon.selected_entries
         if self.include_chars in [u"cv", u"cns_vwl", u"letters"]:
             self.filtered_lexicon_entries = [(e.cleaned_word_unicode, e.cleaned_ipastring.cns_vwl) for e in valid]
         elif self.include_chars in [u"cvp", u"cns_vwl_pstr"]:

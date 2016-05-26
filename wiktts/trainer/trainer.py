@@ -41,7 +41,7 @@ class Trainer(CommandLineTool):
             "nargs": None,
             "type": str,
             "default": None,
-            "help": "Input lexicon file"
+            "help": "Clean lexicon input file"
         },
         {
             "name": "outputdir",
@@ -55,7 +55,7 @@ class Trainer(CommandLineTool):
             "nargs": "?",
             "type": str,
             "default": u"cv",
-            "help": "Include only the given IPA characters [%s] (default: 'cv')" % u"|".join(FILTER_IPA_CHARS)
+            "help": "Output the IPA characters of specified type [%s] (default: 'cv')" % u"|".join(FILTER_IPA_CHARS)
         },
         {
             "name": "--comment",
@@ -115,11 +115,6 @@ class Trainer(CommandLineTool):
             "help": "Only output the Bash script to run the ML tool"
         },
         {
-            "name": "--output-script",
-            "action": "store_true",
-            "help": "Output the Bash script to run the ML tool"
-        },
-        {
             "name": "--script-parameters",
             "nargs": "?",
             "type": str,
@@ -131,7 +126,7 @@ class Trainer(CommandLineTool):
     def actual_command(self):
         # get options
         tool = self.vargs["tool"]
-        lexicon = self.vargs["lexicon"]
+        lexicon_file_path = self.vargs["lexicon"]
         output_dir_path =  self.vargs["outputdir"]
         quiet = self.vargs["quiet"]
         print_stats = self.vargs["stats"] 
@@ -141,7 +136,6 @@ class Trainer(CommandLineTool):
         ipa_index = self.vargs["ipa_index"]
         train_size = self.vargs["train_size_frac"] if self.vargs["train_size_int"] is None else self.vargs["train_size_int"]
         include_chars = self.vargs["include_chars"]
-        output_script = self.vargs["output_script"]
         output_script_only = self.vargs["output_script_only"]
         script_parameters = self.vargs["script_parameters"]
 
@@ -155,7 +149,7 @@ class Trainer(CommandLineTool):
             self.error("The output directory does not exist! (Got: '%s')" % output_dir_path)
 
         # output file names
-        base = os.path.join(output_dir_path, os.path.basename(lexicon))
+        base = os.path.join(output_dir_path, os.path.basename(lexicon_file_path))
         train_file_path = base + u".train"
         test_file_path = base + u".test"
         symb_file_path = base + u".symbols"
@@ -167,9 +161,9 @@ class Trainer(CommandLineTool):
 
         if not output_script_only:
             # read lexicon and clean raw IPA strings
-            lexi = Lexicon(clean=True)
-            lexi.read_file(
-                lexicon_file_path=lexicon,
+            lexicon = Lexicon()
+            lexicon.read_file(
+                lexicon_file_path=lexicon_file_path,
                 comment=comment,
                 delimiter=delimiter,
                 word_index=word_index,
@@ -177,7 +171,7 @@ class Trainer(CommandLineTool):
             )
             # create training, test, and symbol sets
             tool_formatter = cls(
-                lexicon=lexi,
+                lexicon=lexicon,
                 include_chars=include_chars,
                 mapper_name=None,
                 train_size=train_size
@@ -187,7 +181,7 @@ class Trainer(CommandLineTool):
             write_file(tool_formatter.format_symbol_set(), symb_file_path)
             # print statistics if requested
             if print_stats:
-                total = len(lexi)
+                total = len(lexicon)
                 print("Words:")
                 print("  Total: %d" % (tool_formatter.train_size + tool_formatter.test_size))
                 print("  Train: %d" % tool_formatter.train_size)
@@ -201,20 +195,20 @@ class Trainer(CommandLineTool):
                 print("Created file: %s" % test_file_path)
                 print("Created file: %s" % symb_file_path)
 
-        if output_script or output_script_only:
-            parameters = {"base": os.path.basename(base)}
-            for p in script_parameters.split(u","):
-                try:
-                    k, v = p.split(u"=")
-                    key = u"%s_%s" % (tool, k)
-                    parameters[key] = v
-                except:
-                    pass
-            contents, script_name = cls.format_script(parameters=parameters)
-            script_file_path = os.path.join(output_dir_path, script_name)
-            write_file(contents, script_file_path)
-            if not quiet:
-                print("Created file: %s" % script_file_path)
+        # output script
+        parameters = {"base": os.path.basename(base)}
+        for p in script_parameters.split(u","):
+            try:
+                k, v = p.split(u"=")
+                key = u"%s_%s" % (tool, k)
+                parameters[key] = v
+            except:
+                pass
+        contents, script_name = cls.format_script(parameters=parameters)
+        script_file_path = os.path.join(output_dir_path, script_name)
+        write_file(contents, script_file_path)
+        if not quiet:
+            print("Created file: %s" % script_file_path)
 
 
 

@@ -2,8 +2,8 @@
 
 Mining MediaWiki dumps to create better TTS engines (using Machine Learning)
 
-* Version: 0.0.4
-* Date: 2016-05-25
+* Version: 0.0.5
+* Date: 2016-05-26
 * Developer: [Alberto Pettarin](http://www.albertopettarin.it/)
 * License: the MIT License (MIT)
 * Contact: [click here](http://www.albertopettarin.it/contact.html)
@@ -35,7 +35,7 @@ written using the
 * {{hyphenation|pro|nun|ci|a|tion|lang=en}}
 ```
 
-This project provide tools to **extract** pronunciation information
+This project provides tools to **extract** pronunciation information
 from MediaWiki dump files, to **clean** the mined IPA strings,
 and to **prepare** input files for **Machine Learning (ML) tools**
 used in computation linguistics and speech processing.

@@ -37,11 +37,6 @@ of IPA characters, possibly grouping multiple Unicode characters,
 and/or replacing non-preferred representations with the canonical ones
 (e.g., the deprecated 1 Unicode character ligature ``ʧ`` is translated to the canonical ``t͡ʃ``).
 
-By default the output IPA string contains all recognized IPA characters,
-including diacritics, tone marks, and word/syllable breaks.
-If you want to output say, only IPA letters,
-you can use the ``--format`` parameter.
-
 Also note that by default (word, cleaned+normalized IPA) pairs
 are output only if the cleaned Unicode string is IPA valid.
 In other words, if after the cleaning step the Unicode string
@@ -75,7 +70,7 @@ The current code is not optimized for speed.
 Invoke with ``--help`` to get the list of available options:
 
 ```bash
-$ python -m wiktts.ipacleaner --help
+$ python -m wiktts.lexcleaner
 
 usage: __main__.py [-h] [--output-file [OUTPUT_FILE]]
                    [--letter-file [LETTER_FILE]] [--phone-file [PHONE_FILE]]
@@ -84,7 +79,7 @@ usage: __main__.py [-h] [--output-file [OUTPUT_FILE]]
                    [--comment [COMMENT]] [--delimiter [DELIMITER]]
                    [--word-index [WORD_INDEX]] [--ipa-index [IPA_INDEX]]
                    [--no-sort] [--quiet] [--stats] [--all] [--comment-invalid]
-                   [--invalid] [--all-phones]
+                   [--invalid] [--lowercase]
                    lexicon
 
 Clean and normalize a pronunciation lexicon.
@@ -105,10 +100,11 @@ optional arguments:
   --ipa-cleaner-file [IPA_CLEANER_FILE]
                         Apply replacements from the given file to IPA strings
   --format [FORMAT]     Format output according to this template (available
-                        placeholders: {RWORD}, {CWORD}, {RVALID}, {CVALID},
-                        {RUNI}, {RIPA}, {RCV}, {RCVP}, {RCVS}, {RCVPL},
-                        {RCVSL}, {RCVSLW}, {RCVSLWS}, {CIPA}, {CIPA}, {CCV},
-                        {CCVP}, {CCVS}, {CCVPL}, {CCVSL}, {CCVSLW}, {CCVSLWS})
+                        placeholders: {RWORDUNI}, {RIPAUNI}, {RIPAUNIVALID},
+                        {RIPA}, {RCV}, {RCVP}, {RCVS}, {RCVPL}, {RCVSL},
+                        {RCVSLW}, {RCVSLWS}, {CWORDUNI}, {CIPAUNI},
+                        {CIPAUNIVALID}, {CIPA}, {CCV}, {CCVP}, {CCVS},
+                        {CCVPL}, {CCVSL}, {CCVSLW}, {CCVSLWS})
   --comment [COMMENT]   Ignore lines in the lexicon file starting with this
                         string (default: '#')
   --delimiter [DELIMITER]
@@ -126,8 +122,7 @@ optional arguments:
                         cleaning; you might want --no-sort as well)
   --invalid             Print results for words with invalid IPA (after
                         cleaning)
-  --all-phones          Output all phones in the input lexicon, not just those
-                        selected by --format
+  --lowercase           Lowercase all the words
 ```
 
 ## Example

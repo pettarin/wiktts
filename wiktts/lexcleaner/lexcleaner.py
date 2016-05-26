@@ -136,21 +136,20 @@ class LexCleaner(CommandLineTool):
             "help": "Print results for words with invalid IPA (after cleaning)"
         },
         {
-            "name": "--all-phones",
+            "name": "--lowercase",
             "action": "store_true",
-            "help": "Output all phones in the input lexicon, not just those selected by --format"
+            "help": "Lowercase all the words"
         },
     ]
 
     def actual_command(self):
         # get options
-        lexicon = self.vargs["lexicon"]
+        lexicon_file_path = self.vargs["lexicon"]
         output_file_path = self.vargs["output_file"]
         letter_file_path = self.vargs["letter_file"]
         phone_file_path = self.vargs["phone_file"]
         word_cleaner_path = self.vargs["word_cleaner_file"]
         ipa_cleaner_path = self.vargs["ipa_cleaner_file"]
-        all_phones = self.vargs["all_phones"]
         quiet = self.vargs["quiet"]
         print_stats = self.vargs["stats"] 
         sort_results = not self.vargs["no_sort"]
@@ -160,48 +159,44 @@ class LexCleaner(CommandLineTool):
         delimiter = self.vargs["delimiter"]
         word_index = self.vargs["word_index"]
         ipa_index = self.vargs["ipa_index"]
+        lowercase = self.vargs["lowercase"]
 
         # load cleaner
         if word_cleaner_path is None:
-            word_cleaner = DefaultWordCleaner()
+            word_cleaner = DefaultWordCleaner(lowercase=lowercase)
         else:
-            word_cleaner = UniCleaner(word_cleaner_path)
+            word_cleaner = UniCleaner(word_cleaner_path, lowercase=lowercase)
         if ipa_cleaner_path is None:
             ipa_cleaner = DefaultIPACleaner()
         else:
             ipa_cleaner = UniCleaner(ipa_cleaner)
 
         # read lexicon and clean raw IPA strings
-        lexi = Lexicon(
-            clean=False,
+        lexicon = Lexicon(
             word_cleaner=word_cleaner,
             ipa_cleaner=ipa_cleaner,
         )
-        lexi.read_file(
-            lexicon_file_path=lexicon,
+        lexicon.read_file(
+            lexicon_file_path=lexicon_file_path,
             comment=comment,
             delimiter=delimiter,
             word_index=word_index,
             ipa_index=ipa_index
         )
 
+        # select the data to include in the output 
+        if self.vargs["all"]:
+            lexicon.select_entries(ipa_valid=True, ipa_invalid=True)
+        elif self.vargs["invalid"]:
+            lexicon.select_entries(ipa_valid=False, ipa_invalid=True)
+        else:
+            lexicon.select_entries(ipa_valid=True, ipa_invalid=False)
+
         # format data if file or stdout output should be produced
         if (output_file_path is not None) or (not quiet):
-            # select the data to include in the output 
-            if self.vargs["all"]:
-                include_valid = True
-                include_invalid = True
-            elif self.vargs["invalid"]:
-                include_valid = False
-                include_invalid = True
-            else:
-                include_valid = True
-                include_invalid = False
             # format data
-            formatted_data = lexi.format_lexicon(
+            formatted_data = lexicon.format_lexicon(
                 template=template,
-                include_valid=include_valid,
-                include_invalid=include_invalid,
                 comment_invalid=comment_invalid,
                 comment=comment
             )
@@ -217,12 +212,11 @@ class LexCleaner(CommandLineTool):
 
         # save letters to file
         if letter_file_path is not None:
-            write_file(lexi.format_letters(), letter_file_path)
+            write_file(lexicon.format_letters(), letter_file_path)
 
         # save phones to file
         if phone_file_path is not None:
-            p_template = "{CIPA}" if all_phones else template
-            write_file(lexi.format_phones(p_template), phone_file_path)
+            write_file(lexicon.format_phones(), phone_file_path)
 
         # print statistics if requested
         if print_stats:

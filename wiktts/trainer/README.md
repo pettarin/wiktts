@@ -34,7 +34,7 @@ with a syntax appropriate for the specified ML tool:
 * a **train set file**, used to train a ML model;
 * a **test set file**, used to test the trained ML model;
 * a **symbol file**, containing the map from Unicode IPA character to its ML symbol; and
-* (optional) a **Bash script** to train/test the resulting ML model.
+* a **Bash script** to train/test the resulting ML model.
 
 
 ## Usage
@@ -57,14 +57,12 @@ The current code is not optimized for speed.
 Invoke with ``--help`` to get the list of available options:
 
 ```bash
-$ python -m wiktts.trainer --help
-
 usage: __main__.py [-h] [--include-chars [INCLUDE_CHARS]]
                    [--comment [COMMENT]] [--delimiter [DELIMITER]]
                    [--word-index [WORD_INDEX]] [--ipa-index [IPA_INDEX]]
                    [--train-size-int [TRAIN_SIZE_INT]]
                    [--train-size-frac [TRAIN_SIZE_FRAC]] [--quiet] [--stats]
-                   [--output-script-only] [--output-script]
+                   [--output-script-only]
                    [--script-parameters [SCRIPT_PARAMETERS]]
                    tool lexicon outputdir
 
@@ -72,13 +70,13 @@ Prepare train/test/symbol files for ML tools.
 
 positional arguments:
   tool                  ML tool [phonetisaurus|sequitur]
-  lexicon               Input lexicon file
+  lexicon               Clean lexicon input file
   outputdir             Write output files to this directory
 
 optional arguments:
   -h, --help            show this help message and exit
   --include-chars [INCLUDE_CHARS]
-                        Include only the given IPA characters
+                        Output the IPA characters of specified type
                         [all|cv|cvp|cvs|cvpl|cvsl|cvslw|cvslws] (default:
                         'cv')
   --comment [COMMENT]   Ignore lines in the lexicon file starting with this
@@ -97,7 +95,6 @@ optional arguments:
   --quiet               Do not print results to stdout
   --stats               Print statistics
   --output-script-only  Only output the Bash script to run the ML tool
-  --output-script       Output the Bash script to run the ML tool
   --script-parameters [SCRIPT_PARAMETERS]
                         Parameters to configure the Bash script to run the ML
                         tool
@@ -113,6 +110,7 @@ $ python -m wiktts.trainer sequitur enwiktionary-20160407.lex /tmp/
 Created file: /tmp/enwiktionary-20160407.lex.train
 Created file: /tmp/enwiktionary-20160407.lex.test
 Created file: /tmp/enwiktionary-20160407.lex.symbols
+Created file: /tmp/run_sequitur.sh
 ```
 
 Print statistics:
@@ -131,6 +129,7 @@ Symbols:
 Created file: /tmp/enwiktionary-20160407.lex.train
 Created file: /tmp/enwiktionary-20160407.lex.test
 Created file: /tmp/enwiktionary-20160407.lex.symbols
+Created file: /tmp/run_sequitur.sh
 ```
 
 Split the given lexicon into 80% train + 20% test (instead of default 90% + 10%):
@@ -146,16 +145,6 @@ Symbols:
   Total: 88
   Train: 84
   Test:  72
-Created file: /tmp/enwiktionary-20160407.lex.train
-Created file: /tmp/enwiktionary-20160407.lex.test
-Created file: /tmp/enwiktionary-20160407.lex.symbols
-```
-
-Output a Bash script to run Sequitur G2P:
-
-```bash
-$ python -m wiktts.trainer sequitur enwiktionary-20160407.lex /tmp/ --output-script
-
 Created file: /tmp/enwiktionary-20160407.lex.train
 Created file: /tmp/enwiktionary-20160407.lex.test
 Created file: /tmp/enwiktionary-20160407.lex.symbols
