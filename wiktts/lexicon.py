@@ -9,7 +9,9 @@ from __future__ import absolute_import
 from __future__ import print_function
 import io
 import os
+import random
 import unicodedata
+
 from ipapy import is_valid_ipa
 from ipapy import remove_invalid_ipa_characters
 from ipapy.compatibility import to_unicode_string
@@ -27,6 +29,17 @@ DEFAULT_TEMPLATE = {
     (False, True): u"{RWORDUNI}\t{RIPA}",
 
 }
+
+FILTER_IPA_CHARS = [
+    u"all",
+    u"cv",
+    u"cvp",
+    u"cvs",
+    u"cvpl",
+    u"cvsl",
+    u"cvslw",
+    u"cvslws",
+]
 
 PLACEHOLDERS = [
     u"{RWORDUNI}",      # raw word (Unicode)
@@ -51,6 +64,8 @@ PLACEHOLDERS = [
     u"{CCVSL}",         # cns_vwl_str_len repr of cleaned+normalized IPA string (Unicode)
     u"{CCVSLW}",        # cns_vwl_str_len_wb repr of cleaned+normalized IPA string (Unicode)
     u"{CCVSLWS}",       # cns_vwl_str_len_wb_sb repr of cleaned+normalized IPA string (Unicode)
+    u"{CFIL}",          # repr of cleaned+normalized+filtered IPA string (Unicode)
+    u"{CFILMAPPED}",    # mapped cleaned+normalized+filtered IPA string (Unicode)
 ]
 
 class LexiconEntry(object):
@@ -59,7 +74,6 @@ class LexiconEntry(object):
     """
 
     def __init__(self, word_unicode, ipa_unicode, word_cleaner=None, ipa_cleaner=None):
-        # store
         self.raw_word_unicode = word_unicode
         self.raw_ipa_unicode = ipa_unicode
         self.raw_ipa_is_valid = is_valid_ipa(self.raw_ipa_unicode)
@@ -82,15 +96,33 @@ class LexiconEntry(object):
                 ignore=True,
                 single_char_parsing=False
             )
-        self.cleaned_ipa_valid_chars, self.cleaned_ipa_invalid_chars = remove_invalid_ipa_characters(
-            unicode_string=self.cleaned_ipa_unicode,
-            return_invalid=True,
-            single_char_parsing=False
-        )
+        self.filtered_ipastring = None 
+        self.filtered_ipastring_is_mappable = True 
+        self.filtered_mapped_unicode = None
 
-    @property
-    def canonical_unicode(self):
-        return str(self.cleaned_ipastring)
+    def filter_ipa_chars(self, query):
+        if query in [u"cns_vwl", u"letters", u"cv"]:
+            r = self.cleaned_ipastring.cns_vwl
+        elif query in [u"cns_vwl_pstr", u"cvp"]:
+            r = self.cleaned_ipastring.cns_vwl_pstr
+        elif query in [u"cns_vwl_str", u"cvs"]:
+            r = self.cleaned_ipastring.cns_vwl_str
+        elif query in [u"cns_vwl_pstr_long", u"cvpl"]:
+            r = self.cleaned_ipastring.cns_vwl_pstr_long
+        elif query in [u"cns_vwl_str_len", u"cvsl"]:
+            r = self.cleaned_ipastring.cns_vwl_str_len
+        elif query in [u"cns_vwl_str_len_wb", u"cvslw"]:
+            r = self.cleaned_ipastring.cns_vwl_str_len_wb
+        elif query in [u"cns_vwl_str_len_wb_sb", u"cvslws"]:
+            r = self.cleaned_ipastring.cns_vwl_str_len_wb_sb
+        else:
+            r = self.cleaned_ipastring
+        self.filtered_ipastring = r
+
+    def apply_mapper(self, mapper):
+        self.filtered_ipastring_is_mappable = mapper.can_map_ipa_string(self.filtered_ipastring)
+        if self.filtered_ipastring_is_mappable:
+            self.filtered_mapped_unicode = mapper.map_ipa_string(self.filtered_ipastring, ignore=False, return_as_list=True)
 
     @property
     def raw_word_letters(self):
@@ -109,7 +141,6 @@ class LexiconEntry(object):
         return set(self.cleaned_ipastring.ipa_chars)
 
     def format_entry(self, template, comment_string=u""):
-        # TODO this is a bit ugly
         ret = template.format(
             RWORDUNI=self.raw_word_unicode,
             RIPAUNI=self.raw_ipa_unicode,
@@ -133,6 +164,8 @@ class LexiconEntry(object):
             CCVSL=self.cleaned_ipastring.cns_vwl_str_len,
             CCVSLW=self.cleaned_ipastring.cns_vwl_str_len_wb,
             CCVSLWS=self.cleaned_ipastring.cns_vwl_str_len_wb_sb,
+            CFIL=self.filtered_ipastring,
+            CFILMAPPED=self.filtered_mapped_unicode
         )
         if self.cleaned_ipa_is_valid:
             return ret
@@ -149,19 +182,11 @@ class Lexicon(object):
         self.entries = []
         self.word_cleaner = word_cleaner
         self.ipa_cleaner = ipa_cleaner
-        self.select_cleaned_ipa_valid = True
-        self.select_cleaned_ipa_invalid = False
+        self.include_valid = True
+        self.include_invalid = False
 
     def __len__(self):
         return len(self.entries)
-
-    @property
-    def raw_ipa_is_valid(self):
-        return [e for e in self.entries if e.raw_ipa_is_valid]
-
-    @property
-    def cleaned_ipa_is_valid(self):
-        return [e for e in self.entries if e.cleaned_ipa_is_valid]
 
     def __iter__(self):
         for e in self.entries:
@@ -183,19 +208,19 @@ class Lexicon(object):
                         word_cleaner=self.word_cleaner,
                         ipa_cleaner=self.ipa_cleaner
                     ))
-
-    def select_entries(self, ipa_valid=True, ipa_invalid=False):
-        self.select_cleaned_ipa_valid = ipa_valid
-        self.select_cleaned_ipa_invalid = ipa_invalid
+    
+    def select_entries(self, include_valid=True, include_invalid=False):
+        self.include_valid = include_valid
+        self.include_invalid = include_invalid
 
     @property
     def selected_entries(self):
-        if (self.select_cleaned_ipa_invalid) and (self.select_cleaned_ipa_valid):
-            return self.entries
-        elif (self.select_cleaned_ipa_invalid) and (not self.select_cleaned_ipa_valid):
-            return [e for e in self.entries if not e.cleaned_ipa_is_valid]
-        else:
-            return [e for e in self.entries if e.cleaned_ipa_is_valid]
+        entries = self.entries
+        if (self.include_invalid) and (not self.include_valid):
+            entries = [e for e in self.entries if not e.cleaned_ipa_is_valid]
+        elif (not self.include_invalid) and (self.include_valid):
+            entries = [e for e in self.entries if e.cleaned_ipa_is_valid]
+        return entries
 
     @property
     def phones(self):
@@ -219,11 +244,86 @@ class Lexicon(object):
 
     def format_lexicon(self, template=None, comment_invalid=False, comment=u"#"):
         # select template
-        template = to_unicode_string(template) or DEFAULT_TEMPLATE[(self.select_cleaned_ipa_valid, self.select_cleaned_ipa_invalid)]
+        template = to_unicode_string(template) or DEFAULT_TEMPLATE[(self.include_valid, self.include_invalid)]
         # comment string to be prepended to invalid entries, if requested
         comment_string = comment if comment_invalid else u""
         # format data
         return [e.format_entry(template, comment_string) for e in self.selected_entries]
+
+
+
+class MappableLexicon(Lexicon):
+
+    def __init__(self):
+        super(MappableLexicon, self).__init__()
+        self.test_set = []
+        self.train_set = []
+        self.train_symbol_set = set()
+        self.test_symbol_set = set()
+
+    @property
+    def selected_entries(self):
+        entries = [e for e in self.entries if e.cleaned_ipa_is_valid]
+        if (self.include_invalid) and (not self.include_valid):
+            entries = [e for e in entries if not e.filtered_ipastring_is_mappable]
+        elif (not self.include_invalid) and (self.include_valid):
+            entries = [e for e in entries if e.filtered_ipastring_is_mappable]
+        return entries
+
+    def filter_ipa_chars(self, query):
+        for e in self.entries:
+            e.filter_ipa_chars(query)
+
+    def apply_mapper(self, mapper):
+        for e in self.entries:
+            e.apply_mapper(mapper)
+
+    def generate_sets(self, train_size=0.9):
+        def cs(entries):
+            cs_chars = set()
+            for e in entries:
+                cs_chars |= set([c for c in e.filtered_ipastring])
+            return cs_chars
+
+        le_size = len(self.selected_entries)
+        if isinstance(train_size, int):
+            if train_size > le_size:
+                raise ValueError("The given train size (%d) is greater than the valid lexicon size (%d)." % (train_size, le_size))
+            tr_size = train_size
+        elif isinstance(train_size, float):
+            tr_size = int(le_size * train_size)
+        else:
+            raise TypeError("Parameter train_size must be an int or a float.")
+        s = self.selected_entries
+        random.shuffle(s)
+        self.train = s[:tr_size]
+        self.test = s[tr_size:]
+        self.train_symbol_set = cs(self.train)
+        self.test_symbol_set = cs(self.test) 
+
+    @property
+    def train_size(self):
+        return len(self.train)
+
+    @property
+    def test_size(self):
+        return len(self.test)
+
+    @property
+    def train_symbol_set_size(self):
+        return len(self.train_symbol_set)
+
+    @property
+    def test_symbol_set_size(self):
+        return len(self.test_symbol_set)
+
+    @property
+    def symbol_set(self):
+        return self.train_symbol_set | self.test_symbol_set
+
+    @property
+    def symbol_set_size(self):
+        return len(self.symbol_set)
 
 
 

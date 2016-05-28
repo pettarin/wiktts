@@ -14,7 +14,7 @@ __copyright__ = "Copyright 2016, Alberto Pettarin (www.albertopettarin.it)"
 __license__ = "MIT"
 __email__ = "alberto@albertopettarin.it"
 
-__version__ = "0.0.5"
+__version__ = "0.0.6"
 __status__ = "Development"
 
 def write_file(formatted_data, output_file_path):

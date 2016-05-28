@@ -10,12 +10,13 @@ from __future__ import division
 from __future__ import print_function
 import os
 from ipapy.ipastring import IPAString
+from ipapy.mapper import Mapper
 
 from wiktts import write_file
 from wiktts.commandlinetool import CommandLineTool
+from wiktts.lexicon import FILTER_IPA_CHARS
 from wiktts.lexicon import PLACEHOLDERS
-from wiktts.lexicon import Lexicon
-from wiktts.trainer.tool import FILTER_IPA_CHARS
+from wiktts.lexicon import MappableLexicon
 from wiktts.trainer.tool import TOOLS
 from wiktts.trainer.tool import ToolPhonetisaurus
 from wiktts.trainer.tool import ToolSequitur
@@ -51,11 +52,18 @@ class Trainer(CommandLineTool):
             "help": "Write output files to this directory"
         },
         {
-            "name": "--include-chars",
+            "name": "--chars",
             "nargs": "?",
             "type": str,
             "default": u"cv",
             "help": "Output the IPA characters of specified type [%s] (default: 'cv')" % u"|".join(FILTER_IPA_CHARS)
+        },
+        {
+            "name": "--mapper",
+            "nargs": "?",
+            "type": str,
+            "default": u"auto",
+            "help": "Map IPA chars using the specified mapper [arpabet|auto|kirshenbaum] (default: 'auto')"
         },
         {
             "name": "--comment",
@@ -121,13 +129,19 @@ class Trainer(CommandLineTool):
             "default": u"",
             "help": "Parameters to configure the Bash script to run the ML tool"
         },
+        {
+            "name": "--create-output-dir",
+            "action": "store_true",
+            "help": "Create the output directory if it does not exist"
+        },
     ]
 
     def actual_command(self):
         # get options
-        tool = self.vargs["tool"]
+        tool_name = self.vargs["tool"]
         lexicon_file_path = self.vargs["lexicon"]
         output_dir_path =  self.vargs["outputdir"]
+        chars = self.vargs["chars"]
         quiet = self.vargs["quiet"]
         print_stats = self.vargs["stats"] 
         comment = self.vargs["comment"]
@@ -135,18 +149,21 @@ class Trainer(CommandLineTool):
         word_index = self.vargs["word_index"]
         ipa_index = self.vargs["ipa_index"]
         train_size = self.vargs["train_size_frac"] if self.vargs["train_size_int"] is None else self.vargs["train_size_int"]
-        include_chars = self.vargs["include_chars"]
         output_script_only = self.vargs["output_script_only"]
         script_parameters = self.vargs["script_parameters"]
+        create_output_dir = self.vargs["create_output_dir"]
+        mapper_name = self.vargs["mapper"]
 
         # make sure
-        if tool not in [u"phonetisaurus", u"sequitur"]:
-            self.error("The available tools are: %s. (Got: '%s')" % (TOOLS, tool))
+        if tool_name not in TOOLS:
+            self.error("The available tools are: %s. (Got: '%s')" % (TOOLS, tool_name))
 
         # make sure output directory exists
         if not os.path.isdir(output_dir_path):
-            # TODO create dir instead?
-            self.error("The output directory does not exist! (Got: '%s')" % output_dir_path)
+            if create_output_dir:
+                os.makedirs(output_dir_path)
+            else:
+                self.error("The output directory does not exist! (Got: '%s') Use '--create-output-dir' to create it. " % output_dir_path)
 
         # output file names
         base = os.path.join(output_dir_path, os.path.basename(lexicon_file_path))
@@ -154,14 +171,15 @@ class Trainer(CommandLineTool):
         test_file_path = base + u".test"
         symb_file_path = base + u".symbols"
         script_file_path = None
-        if tool == u"phonetisaurus":
+        if tool_name == u"phonetisaurus":
             cls = ToolPhonetisaurus
         else:
             cls = ToolSequitur
 
         if not output_script_only:
-            # read lexicon and clean raw IPA strings
-            lexicon = Lexicon()
+            # read lexicon with cleaned IPA strings
+            #print("Building Lexicon...")
+            lexicon = MappableLexicon()
             lexicon.read_file(
                 lexicon_file_path=lexicon_file_path,
                 comment=comment,
@@ -169,12 +187,35 @@ class Trainer(CommandLineTool):
                 word_index=word_index,
                 ipa_index=ipa_index
             )
+            #print("Filtering...")
+            lexicon.filter_ipa_chars(chars)
+            
+            # create and apply mapper
+            #print("Creating mapping...")
+            if mapper_name == u"kirshenbaum":
+                from ipapy.kirshenbaummapper import KirshenbaumMapper
+                mapper = KirshenbaumMapper()
+            elif mapper_name == u"arpabet":
+                from ipapy.arpabetmapper import ARPABETMapper
+                mapper = ARPABETMapper()
+            else:
+                mapper = Mapper()
+                i = 1
+                for p in lexicon.phones:
+                    mapper[(p.canonical_representation,)] = u"%03d" % i
+                    i += 1
+            #print("Mapping...")
+            lexicon.apply_mapper(mapper)
+            
+            # generate train/test/symbol sets
+            #print("Sets...")
+            lexicon.generate_sets(train_size=train_size)
+            
             # create training, test, and symbol sets
+            #print("Outputting...")
             tool_formatter = cls(
                 lexicon=lexicon,
-                include_chars=include_chars,
-                mapper_name=None,
-                train_size=train_size
+                mapper=mapper
             )
             write_file(tool_formatter.format_train(), train_file_path)
             write_file(tool_formatter.format_test(), test_file_path)
@@ -183,13 +224,13 @@ class Trainer(CommandLineTool):
             if print_stats:
                 total = len(lexicon)
                 print("Words:")
-                print("  Total: %d" % (tool_formatter.train_size + tool_formatter.test_size))
-                print("  Train: %d" % tool_formatter.train_size)
-                print("  Test:  %d" % tool_formatter.test_size)
+                print("  Total: %d" % (lexicon.train_size + lexicon.test_size))
+                print("  Train: %d" % lexicon.train_size)
+                print("  Test:  %d" % lexicon.test_size)
                 print("Symbols:")
-                print("  Total: %d" % (tool_formatter.symbol_set_size))
-                print("  Train: %d" % (tool_formatter.train_symbol_set_size))
-                print("  Test:  %d" % (tool_formatter.test_symbol_set_size))
+                print("  Total: %d" % (lexicon.symbol_set_size))
+                print("  Train: %d" % (lexicon.train_symbol_set_size))
+                print("  Test:  %d" % (lexicon.test_symbol_set_size))
             if not quiet:
                 print("Created file: %s" % train_file_path)
                 print("Created file: %s" % test_file_path)

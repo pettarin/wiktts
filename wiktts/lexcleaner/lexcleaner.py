@@ -186,11 +186,11 @@ class LexCleaner(CommandLineTool):
 
         # select the data to include in the output 
         if self.vargs["all"]:
-            lexicon.select_entries(ipa_valid=True, ipa_invalid=True)
+            lexicon.select_entries(include_valid=True, include_invalid=True)
         elif self.vargs["invalid"]:
-            lexicon.select_entries(ipa_valid=False, ipa_invalid=True)
+            lexicon.select_entries(include_valid=False, include_invalid=True)
         else:
-            lexicon.select_entries(ipa_valid=True, ipa_invalid=False)
+            lexicon.select_entries(include_valid=True, include_invalid=False)
 
         # format data if file or stdout output should be produced
         if (output_file_path is not None) or (not quiet):
