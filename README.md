@@ -8,6 +8,18 @@ Mining MediaWiki dumps to create better TTS engines (using Machine Learning)
 * License: the MIT License (MIT)
 * Contact: [click here](http://www.albertopettarin.it/contact.html)
 
+## VERY IMPORTANT NOTICE
+
+This is work in progress.
+Code, tools, APIs, etc. are subject to change without any further notice.
+Use at your own risk, until v1.0.0 is released (and this notice disappears).
+Current TODO list:
+
+* investigate why Phonetisaurus sometimes fails to run on output test set
+* add an "apply" mode to the G2P Bash scripts, to map (unknown/new) words
+* write a tool to diff IPA/mapped lexica, including a "consider one of the two lexica as ground truth" switch
+* map eSpeak phones and/or create eSpeak voice from .symbol files
+
 
 ## Abstract 
 
@@ -64,6 +76,14 @@ This repository contains the following Python 2.7.x/3.5.x tools:
 * ``wiktts.mw.miner``: mine [IPA](http://www.internationalphoneticassociation.org/) strings from a MediaWiki dump file
 * ``wiktts.lexcleaner``: clean+normalize a pronunciation lexicon
 * ``wiktts.trainer``: prepare train/test/symbol sets for ML tools (e.g., Phonetisaurus or Sequitur)
+
+This project uses the sister ``ipapy`` Python module,
+available on [PyPI](https://pypi.python.org/pypi/ipapy)
+and [GitHub](https://github.com/pettarin/ipapy),
+under the same license (MIT License).
+The ``ipapy`` module is released and maintained on a separate GitHub repository,
+since it might be used in applications other than ``wiktts``,
+although the development of ``ipapy`` is currently heavily influenced by the needs of ``wiktts``.
 
 
 ## Dependencies
@@ -139,20 +159,20 @@ $ # clone the repo
 $ git clone https://github.com/pettarin/wiktts.git
 $ cd wiktts/dumps
 
-$ # download the English Wiktionary dump
+$ # download the English Wiktionary dump (minutes)
 $ wget "https://dumps.wikimedia.org/enwiktionary/20160407/enwiktionary-20160407-pages-meta-current.xml.bz2"
 $ cd ..
 
-$ # extract the IPA strings (several minutes)
+$ # extract the IPA strings (minutes)
 $ python -m wiktts.mw.miner enwiktionary dumps/enwiktionary-20160407-pages-meta-current.xml.bz2 --output-file /tmp/enwiktionary-20160407.lex
 
-$ # clean the mined (word, IPA) pairs (several minutes)
+$ # clean the mined (word, IPA) pairs (minutes)
 $ python -m wiktts.lexcleaner /tmp/enwiktionary-20160407.lex --output-file /tmp/enwiktionary-20160407.lex.clean
 
-$ # create train/test/symbol files for Sequitur G2P
-$ python -m wiktts.trainer sequitur /tmp/enwiktionary-20160407.lex.clean /tmp/ --output-script
+$ # create train/test/symbol files for Sequitur G2P (minutes)
+$ python -m wiktts.trainer sequitur /tmp/enwiktionary-20160407.lex.clean /tmp/
 
-$ # train a G2P model using Sequitur G2P (several hours)
+$ # train a G2P model using Sequitur G2P (hours)
 $ cd /tmp
 $ bash run_sequitur.sh train
 
