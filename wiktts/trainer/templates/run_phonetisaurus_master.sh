@@ -12,10 +12,13 @@ LOG="{BASE}.phonetisaurus.log"
 CORPUS="{BASE}.corpus"
 ARPA="{BASE}.arpa"
 MODEL="{BASE}.fst"
-PREFIX="{BASE}.hyp"
+PREFIX="{BASE}"
+WORDS="$PREFIX.words"
+HYP="$PREFIX.hyp"
+REF="$PREFIX.ref"
+ERPY="{ERPY}"
 NGRAMORDER="{NGRAMORDER}"
 SMOOTHING="{SMOOTHING}"
-DECODER="{DECODER}"
 
 ### NORMALLY YOU SHOULD NOT NEED TO EDIT BELOW THIS LINE
 
@@ -28,7 +31,6 @@ usage() {{
     echo "Parameters:"
     echo "  ngramorder: {NGRAMORDER}"  
     echo "  smoothing: {SMOOTHING}"  
-    echo "  decoder: {DECODER}"  
     echo ""
     exit 2
 }}
@@ -60,14 +62,14 @@ run_train() {{
     echo "Calling estimate-ngram... done"
     echo ""
 
-    echo "Calling phonetisaurus-arpa2wfst-omega..."
-    phonetisaurus-arpa2wfst-omega --lm=$ARPA --ofile=$MODEL 2>> $LOG >> $LOG
+    echo "Calling phonetisaurus-arpa2wfst..."
+    phonetisaurus-arpa2wfst --lm=$ARPA --ofile=$MODEL 2>> $LOG >> $LOG
     if [ ! -e "$MODEL" ]
     then
         echo "[ERROR] MODEL file $MODEL not created. Aborting."
         exit 1
     fi
-    echo "Calling phonetisaurus-arpa2wfst-omega... done"
+    echo "Calling phonetisaurus-arpa2wfst... done"
     echo ""
 
     END=`date +%s`
@@ -84,13 +86,31 @@ run_test() {{
         echo "[ERROR] To test you need file $MODEL (i.e., train first)"
         exit 1
     fi
-    phonetisaurus-calculateER-omega --testfile $TEST --modelfile $MODEL --prefix $PREFIX --decoder_type $DECODER 
+
+    # TODO detect duplicate entries and concatenate:
+    #
+    # in .test:
+    #
+    # abc \t 001 002 003
+    # abc \t 001 002 004
+    #
+    # should become in .ref :
+    #
+    # abc \t 001 002 003 \t 001 002 004
+    #
+    cp $TEST $REF
+    cat $TEST | awk 'BEGIN{{FS="\t"}}{{print $1}}' > $WORDS
+    phonetisaurus-g2pfst --model=$MODEL --wordlist=$WORDS > $HYP
+    python $ERPY $HYP $REF
 }}
 
 run_clean() {{
     rm -f $CORPUS
     rm -f $ARPA
     rm -f $MODEL
+    rm -f $WORDS
+    rm -f $HYP
+    rm -f $REF
 }}
 
 if [ "$#" -lt 1 ]

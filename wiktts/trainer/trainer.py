@@ -18,7 +18,8 @@ from wiktts.lexicon import FILTER_IPA_CHARS
 from wiktts.lexicon import PLACEHOLDERS
 from wiktts.lexicon import MappableLexicon
 from wiktts.trainer.tool import TOOLS
-from wiktts.trainer.tool import ToolPhonetisaurus
+from wiktts.trainer.tool import ToolPhonetisaurus08a
+from wiktts.trainer.tool import ToolPhonetisaurusMaster
 from wiktts.trainer.tool import ToolSequitur
 
 __author__ = "Alberto Pettarin"
@@ -171,8 +172,10 @@ class Trainer(CommandLineTool):
         test_file_path = base + u".test"
         symb_file_path = base + u".symbols"
         script_file_path = None
-        if tool_name == u"phonetisaurus":
-            cls = ToolPhonetisaurus
+        if tool_name == u"phonetisaurus_08a":
+            cls = ToolPhonetisaurus08a
+        elif tool_name == u"phonetisaurus_master":
+            cls = ToolPhonetisaurusMaster
         else:
             cls = ToolSequitur
 
@@ -237,7 +240,7 @@ class Trainer(CommandLineTool):
                 print("Created file: %s" % symb_file_path)
 
         # output script
-        parameters = {"base": os.path.basename(base)}
+        parameters = {"output_dir_path": output_dir_path, "base": os.path.basename(base)}
         for p in script_parameters.split(u","):
             try:
                 k, v = p.split(u"=")

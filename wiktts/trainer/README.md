@@ -22,8 +22,11 @@ You can change these defaults with the ``--comment``, ``--delimiter``, and
 
 Currently, the following tools are supported:
 
-* [Phonetisaurus](https://github.com/AdolfVonKleist/Phonetisaurus)
 * [Sequitur](https://www-i6.informatik.rwth-aachen.de/web/Software/g2p.html)
+* [Phonetisaurus (latest commit on GitHub master)](https://github.com/AdolfVonKleist/Phonetisaurus)
+  (NOTE: the evaluation is based on code adapted from v0.8 and needs more work)
+* [Phonetisaurus v0.8a](https://code.google.com/archive/p/phonetisaurus/)
+  (IMPORTANT NOTE: v0.8a does not seems to support UTF-8 encoded train/test files, they must be ASCII encoded files!)
 
 
 ## Output
@@ -72,7 +75,8 @@ usage: __main__.py [-h] [--chars [CHARS]] [--mapper [MAPPER]]
 Prepare train/test/symbol files for ML tools.
 
 positional arguments:
-  tool                  ML tool [phonetisaurus|sequitur]
+  tool                  ML tool
+                        [phonetisaurus_08a|phonetisaurus_master|sequitur]
   lexicon               Clean lexicon input file
   outputdir             Write output files to this directory
 
@@ -102,7 +106,7 @@ optional arguments:
   --script-parameters [SCRIPT_PARAMETERS]
                         Parameters to configure the Bash script to run the ML
                         tool
-  --create-output-dir   Create the output directory if it does not exist 
+  --create-output-dir   Create the output directory if it does not exist
 ```
 
 ## Examples

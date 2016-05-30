@@ -10,6 +10,7 @@ from __future__ import print_function
 import io
 import os
 import random
+import shutil
 
 from ipapy import IPA_TO_UNICODE
 from ipapy import UNICODE_TO_IPA
@@ -20,7 +21,8 @@ __license__ = "MIT"
 __email__ = "alberto@albertopettarin.it"
 
 TOOLS = [
-    u"phonetisaurus",
+    u"phonetisaurus_08a",
+    u"phonetisaurus_master",
     u"sequitur"
 ]
 
@@ -65,11 +67,72 @@ class Tool(object):
 
 
 
-class ToolPhonetisaurus(Tool):
+class ToolPhonetisaurusMaster(Tool):
+    """
+    Phonetisaurus as in current GitHub master
+    (https://github.com/AdolfVonKleist/Phonetisaurus) with commit::
 
-    DEFAULT_SCRIPT_NAME = u"run_phonetisaurus.sh"
+        commit 09651ed5f6e9040d6dd30070601ecccfad254df4
+        Author: Josef Novak <joe@spitch.ch>
+        Date:   Fri Mar 11 13:51:17 2016 +0000
+        Update to optionally print out the state-symbols table
 
-    SCRIPT_TEMPLATE_FILE_PATH = u"templates/run_phonetisaurus.sh"
+    Note: "./configure && make" terminates with errors because "make phonetisaurus-g2prnn" is broken,
+    use instead::
+    
+        ./configure
+        make phonetisaurus-align
+        make phonetisaurus-arpa2wfst
+        make rnnlm
+        make phonetisaurus-g2pfst
+
+    """
+
+    DEFAULT_SCRIPT_NAME = u"run_phonetisaurus_master.sh"
+
+    SCRIPT_TEMPLATE_FILE_PATH = u"templates/run_phonetisaurus_master.sh"
+
+    COMPUTE_ER = u"templates/compute_er_phonetisaurus_master.py"
+
+    DEFAULT_PARAMETERS = {
+        "phonetisaurus_ngramorder": "8",
+        "phonetisaurus_smoothing": "FixKN",
+    }
+
+    def _format_g2p_input(self, entries):
+        acc = []
+        for e in entries:
+            word = e.cleaned_word_unicode
+            phones = e.filtered_mapped_unicode
+            acc.append(u"%s\t%s" % (word, u" ".join(phones)))
+        return acc
+
+    @classmethod
+    def _format_script_contents(cls, template, d):
+        # copy COMPUTE_ER tool, derived from Phonetisaurus 0.8a,
+        # to the destination directory,
+        # since the tools on the current master seems to lack the "compute ER" feature
+        src_path = os.path.join(os.path.dirname(__file__), cls.COMPUTE_ER)
+        dest_path = os.path.join(d["output_dir_path"], os.path.basename(cls.COMPUTE_ER))
+        shutil.copyfile(src_path, dest_path)
+        return template.format(
+            BASE=d["base"],
+            NGRAMORDER=d["phonetisaurus_ngramorder"],
+            SMOOTHING=d["phonetisaurus_smoothing"],
+            ERPY=dest_path
+        )
+
+
+
+class ToolPhonetisaurus08a(Tool):
+    """
+    Phonetisaurus 0.8a (IS2013 paper) from
+    https://code.google.com/archive/p/phonetisaurus/
+    """
+
+    DEFAULT_SCRIPT_NAME = u"run_phonetisaurus_08a.sh"
+
+    SCRIPT_TEMPLATE_FILE_PATH = u"templates/run_phonetisaurus_08a.sh"
 
     DEFAULT_PARAMETERS = {
         "phonetisaurus_ngramorder": "8",
@@ -96,7 +159,13 @@ class ToolPhonetisaurus(Tool):
 
 
 
+
+
+
 class ToolSequitur(Tool):
+    """
+    Sequitur r1668-r3 (2016-04-25)
+    """
 
     DEFAULT_SCRIPT_NAME = u"run_sequitur.sh"
 
