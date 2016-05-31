@@ -135,6 +135,11 @@ class Trainer(CommandLineTool):
             "action": "store_true",
             "help": "Create the output directory if it does not exist"
         },
+        {
+            "name": "--lowercase",
+            "action": "store_true",
+            "help": "Lowercase all the words"
+        },
     ]
 
     def actual_command(self):
@@ -154,6 +159,7 @@ class Trainer(CommandLineTool):
         script_parameters = self.vargs["script_parameters"]
         create_output_dir = self.vargs["create_output_dir"]
         mapper_name = self.vargs["mapper"]
+        lowercase = self.vargs["lowercase"]
 
         # make sure
         if tool_name not in TOOLS:
@@ -169,8 +175,13 @@ class Trainer(CommandLineTool):
         # output file names
         base = os.path.join(output_dir_path, os.path.basename(lexicon_file_path))
         train_file_path = base + u".train"
+        train_words_file_path = base + u".train.words"
+        train_symbols_file_path = base + u".train.symbols"
         test_file_path = base + u".test"
-        symb_file_path = base + u".symbols"
+        test_words_file_path = base + u".test.words"
+        test_symbols_file_path = base + u".test.symbols"
+        words_file_path = base + u".words"
+        symbols_file_path = base + u".symbols"
         script_file_path = None
         if tool_name == u"phonetisaurus_08a":
             cls = ToolPhonetisaurus08a
@@ -190,9 +201,13 @@ class Trainer(CommandLineTool):
                 word_index=word_index,
                 ipa_index=ipa_index
             )
+            if lowercase:
+                #print("Lowercasing...")
+                lexicon.lower()
+            
             #print("Filtering...")
             lexicon.filter_ipa_chars(chars)
-            
+           
             # create and apply mapper
             #print("Creating mapping...")
             if mapper_name == u"kirshenbaum":
@@ -202,11 +217,14 @@ class Trainer(CommandLineTool):
                 from ipapy.arpabetmapper import ARPABETMapper
                 mapper = ARPABETMapper()
             else:
+                # create default mapper
                 mapper = Mapper()
-                i = 1
-                for p in lexicon.phones:
-                    mapper[(p.canonical_representation,)] = u"%03d" % i
-                    i += 1
+                # NOTE sorting by canonical representation ensures consistency of the symbol set
+                #      across different tools (for the same input lexicon)
+                phones = sorted([p.canonical_representation for p in lexicon.filtered_phones])
+                for i, p in enumerate(phones):
+                    # NOTE the key is a 1-element tuple: (canonical_repr, )
+                    mapper[(p,)] = u"%03d" % (i + 1)
             #print("Mapping...")
             lexicon.apply_mapper(mapper)
             
@@ -221,8 +239,13 @@ class Trainer(CommandLineTool):
                 mapper=mapper
             )
             write_file(tool_formatter.format_train(), train_file_path)
+            write_file(tool_formatter.format_words(train=True, test=False), train_words_file_path) 
+            write_file(tool_formatter.format_symbols(train=True, test=False), train_symbols_file_path)
             write_file(tool_formatter.format_test(), test_file_path)
-            write_file(tool_formatter.format_symbol_set(), symb_file_path)
+            write_file(tool_formatter.format_words(train=False, test=True), test_words_file_path) 
+            write_file(tool_formatter.format_symbols(train=False, test=True), test_symbols_file_path)
+            write_file(tool_formatter.format_words(train=True, test=True, sort=True), words_file_path) 
+            write_file(tool_formatter.format_symbols(train=True, test=True), symbols_file_path)
             # print statistics if requested
             if print_stats:
                 total = len(lexicon)
@@ -236,11 +259,19 @@ class Trainer(CommandLineTool):
                 print("  Test:  %d" % (lexicon.test_symbol_set_size))
             if not quiet:
                 print("Created file: %s" % train_file_path)
+                print("Created file: %s" % train_words_file_path)
+                print("Created file: %s" % train_symbols_file_path)
                 print("Created file: %s" % test_file_path)
-                print("Created file: %s" % symb_file_path)
+                print("Created file: %s" % test_words_file_path)
+                print("Created file: %s" % test_symbols_file_path)
+                print("Created file: %s" % words_file_path)
+                print("Created file: %s" % symbols_file_path)
 
         # output script
-        parameters = {"output_dir_path": output_dir_path, "base": os.path.basename(base)}
+        parameters = {
+            "output_dir_path": output_dir_path,
+            "base": os.path.basename(base)
+        }
         for p in script_parameters.split(u","):
             try:
                 k, v = p.split(u"=")
@@ -248,8 +279,8 @@ class Trainer(CommandLineTool):
                 parameters[key] = v
             except:
                 pass
-        contents, script_name = cls.format_script(parameters=parameters)
-        script_file_path = os.path.join(output_dir_path, script_name)
+        contents = cls.format_script(parameters=parameters)
+        script_file_path = os.path.join(output_dir_path, cls.DEFAULT_SCRIPT_NAME)
         write_file(contents, script_file_path)
         if not quiet:
             print("Created file: %s" % script_file_path)

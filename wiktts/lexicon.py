@@ -119,6 +119,10 @@ class LexiconEntry(object):
             r = self.cleaned_ipastring
         self.filtered_ipastring = r
 
+    def lower(self):
+        self.raw_word_unicode = self.raw_word_unicode.lower()
+        self.cleaned_word_unicode = self.cleaned_word_unicode.lower()
+
     def apply_mapper(self, mapper):
         self.filtered_ipastring_is_mappable = mapper.can_map_ipa_string(self.filtered_ipastring)
         if self.filtered_ipastring_is_mappable:
@@ -139,6 +143,10 @@ class LexiconEntry(object):
     @property
     def cleaned_ipa_phones(self):
         return set(self.cleaned_ipastring.ipa_chars)
+
+    @property
+    def filtered_ipa_phones(self):
+        return set(self.filtered_ipastring.ipa_chars)
 
     def format_entry(self, template, comment_string=u""):
         ret = template.format(
@@ -274,15 +282,26 @@ class MappableLexicon(Lexicon):
         for e in self.entries:
             e.filter_ipa_chars(query)
 
+    @property
+    def filtered_phones(self):
+        phones = set()
+        for e in self.selected_entries:
+            phones |= e.filtered_ipa_phones
+        return phones
+
     def apply_mapper(self, mapper):
         for e in self.entries:
             e.apply_mapper(mapper)
+
+    def lower(self):
+        for e in self.entries:
+            e.lower()
 
     def generate_sets(self, train_size=0.9):
         def cs(entries):
             cs_chars = set()
             for e in entries:
-                cs_chars |= set([c for c in e.filtered_ipastring])
+                cs_chars |= e.filtered_ipa_phones
             return cs_chars
 
         le_size = len(self.selected_entries)

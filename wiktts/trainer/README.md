@@ -69,7 +69,7 @@ usage: __main__.py [-h] [--chars [CHARS]] [--mapper [MAPPER]]
                    [--train-size-frac [TRAIN_SIZE_FRAC]] [--quiet] [--stats]
                    [--output-script-only]
                    [--script-parameters [SCRIPT_PARAMETERS]]
-                   [--create-output-dir]
+                   [--create-output-dir] [--lowercase]
                    tool lexicon outputdir
 
 Prepare train/test/symbol files for ML tools.
@@ -107,6 +107,7 @@ optional arguments:
                         Parameters to configure the Bash script to run the ML
                         tool
   --create-output-dir   Create the output directory if it does not exist
+  --lowercase           Lowercase all the words
 ```
 
 ## Examples
@@ -117,7 +118,12 @@ Create train/test/symbol files for Sequitur G2P:
 $ python -m wiktts.trainer sequitur enwiktionary-20160407.lex /tmp/
 
 Created file: /tmp/enwiktionary-20160407.lex.train
+Created file: /tmp/enwiktionary-20160407.lex.train.words
+Created file: /tmp/enwiktionary-20160407.lex.train.symbols
 Created file: /tmp/enwiktionary-20160407.lex.test
+Created file: /tmp/enwiktionary-20160407.lex.test.words
+Created file: /tmp/enwiktionary-20160407.lex.test.symbols
+Created file: /tmp/enwiktionary-20160407.lex.words
 Created file: /tmp/enwiktionary-20160407.lex.symbols
 Created file: /tmp/run_sequitur.sh
 ```
@@ -136,7 +142,12 @@ Symbols:
   Train: 87
   Test:  63
 Created file: /tmp/enwiktionary-20160407.lex.train
+Created file: /tmp/enwiktionary-20160407.lex.train.words
+Created file: /tmp/enwiktionary-20160407.lex.train.symbols
 Created file: /tmp/enwiktionary-20160407.lex.test
+Created file: /tmp/enwiktionary-20160407.lex.test.words
+Created file: /tmp/enwiktionary-20160407.lex.test.symbols
+Created file: /tmp/enwiktionary-20160407.lex.words
 Created file: /tmp/enwiktionary-20160407.lex.symbols
 Created file: /tmp/run_sequitur.sh
 ```
@@ -155,7 +166,12 @@ Symbols:
   Train: 84
   Test:  72
 Created file: /tmp/enwiktionary-20160407.lex.train
+Created file: /tmp/enwiktionary-20160407.lex.train.words
+Created file: /tmp/enwiktionary-20160407.lex.train.symbols
 Created file: /tmp/enwiktionary-20160407.lex.test
+Created file: /tmp/enwiktionary-20160407.lex.test.words
+Created file: /tmp/enwiktionary-20160407.lex.test.symbols
+Created file: /tmp/enwiktionary-20160407.lex.words
 Created file: /tmp/enwiktionary-20160407.lex.symbols
 Created file: /tmp/run_sequitur.sh
 ```

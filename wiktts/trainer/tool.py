@@ -41,13 +41,26 @@ class Tool(object):
     def format_test(self):
         return self._format_g2p_input(self.lexicon.test)
 
-    def format_symbol_set(self):
+    def format_words(self, train=False, test=True, sort=False):
         acc = []
-        for k in self.mapper.ipa_descriptors:
-            uni_char = IPA_TO_UNICODE[k[0]]
-            ipa_char = UNICODE_TO_IPA[uni_char]
-            acc.append(u"%s\t%s (%s)" % (self.mapper[k], ipa_char.name, uni_char))
-        return sorted(acc)
+        if train:
+            acc.extend([e.cleaned_word_unicode for e in self.lexicon.train])
+        if test:
+            acc.extend([e.cleaned_word_unicode for e in self.lexicon.test])
+        if sort:
+            return sorted(acc)
+        return acc
+
+    def format_symbols(self, train=False, test=True, sort=True):
+        acc = set()
+        if train:
+            acc |= set([u"%s\t%s\t%s" % (self.mapper[(p.canonical_representation,)], p.name, p.unicode_repr) for p in self.lexicon.train_symbol_set])
+        if test:
+            acc |= set([u"%s\t%s\t%s" % (self.mapper[(p.canonical_representation,)], p.name, p.unicode_repr) for p in self.lexicon.test_symbol_set])
+        acc = list(acc)
+        if sort:
+            return sorted(acc)
+        return acc
 
     @classmethod
     def format_script(cls, parameters):
@@ -59,7 +72,7 @@ class Tool(object):
         d = dict()
         d.update(cls.DEFAULT_PARAMETERS)
         d.update(parameters)
-        return ([cls._format_script_contents(template, d)], cls.DEFAULT_SCRIPT_NAME)
+        return [cls._format_script_contents(template, d)]
 
     @classmethod
     def _format_script_contents(cls, template, d):
@@ -97,15 +110,11 @@ class ToolPhonetisaurusMaster(Tool):
     DEFAULT_PARAMETERS = {
         "phonetisaurus_ngramorder": "8",
         "phonetisaurus_smoothing": "FixKN",
+        "phonetisaurus_variants": "1",
     }
 
     def _format_g2p_input(self, entries):
-        acc = []
-        for e in entries:
-            word = e.cleaned_word_unicode
-            phones = e.filtered_mapped_unicode
-            acc.append(u"%s\t%s" % (word, u" ".join(phones)))
-        return acc
+        return [u"%s\t%s" % (e.cleaned_word_unicode, u" ".join(e.filtered_mapped_unicode)) for e in entries]
 
     @classmethod
     def _format_script_contents(cls, template, d):
@@ -119,7 +128,8 @@ class ToolPhonetisaurusMaster(Tool):
             BASE=d["base"],
             NGRAMORDER=d["phonetisaurus_ngramorder"],
             SMOOTHING=d["phonetisaurus_smoothing"],
-            ERPY=dest_path
+            VARIANTS=d["phonetisaurus_variants"],
+            ERPY=dest_path,
         )
 
 
@@ -138,15 +148,11 @@ class ToolPhonetisaurus08a(Tool):
         "phonetisaurus_ngramorder": "8",
         "phonetisaurus_smoothing": "FixKN",
         "phonetisaurus_decoder": "fst_phi",
+        "phonetisaurus_variants": "1",
     }
 
     def _format_g2p_input(self, entries):
-        acc = []
-        for e in entries:
-            word = e.cleaned_word_unicode
-            phones = e.filtered_mapped_unicode
-            acc.append(u"%s\t%s" % (word, u" ".join(phones)))
-        return acc
+        return [u"%s\t%s" % (e.cleaned_word_unicode, u" ".join(e.filtered_mapped_unicode)) for e in entries]
 
     @classmethod
     def _format_script_contents(cls, template, d):
@@ -154,11 +160,9 @@ class ToolPhonetisaurus08a(Tool):
             BASE=d["base"],
             NGRAMORDER=d["phonetisaurus_ngramorder"],
             SMOOTHING=d["phonetisaurus_smoothing"],
-            DECODER=d["phonetisaurus_decoder"]
+            DECODER=d["phonetisaurus_decoder"],
+            VARIANTS=d["phonetisaurus_variants"],
         )
-
-
-
 
 
 
@@ -173,25 +177,22 @@ class ToolSequitur(Tool):
 
     DEFAULT_PARAMETERS = {
         "sequitur_devel": "5",
-        "sequitur_maxlevel": "8",
+        "sequitur_maxorder": "8",
+        "sequitur_variants": "1"
     }
 
     def _format_g2p_input(self, entries):
-        acc = []
-        for e in entries:
-            # NOTE sequitur does not allow spaces in word or phoneme symbol!
-            # TODO warn the user
-            word = e.cleaned_word_unicode.replace(u" ", u"")
-            phones = e.filtered_mapped_unicode
-            acc.append(u"%s %s" % (word, u" ".join(phones)))
-        return acc
+        # NOTE sequitur does not allow spaces in word or phoneme symbol!
+        # TODO warn the user
+        return [u"%s %s" % (e.cleaned_word_unicode.replace(u" ", u""), u" ".join(e.filtered_mapped_unicode)) for e in entries]
 
     @classmethod
     def _format_script_contents(cls, template, d):
         return template.format(
             BASE=d["base"],
             DEVEL=d["sequitur_devel"],
-            MAXLEVEL=d["sequitur_maxlevel"]
+            MAXORDER=d["sequitur_maxorder"],
+            VARIANTS=d["sequitur_variants"]
         )
 
 

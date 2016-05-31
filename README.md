@@ -2,8 +2,8 @@
 
 Mining MediaWiki dumps to create better TTS engines (using Machine Learning)
 
-* Version: 0.0.7
-* Date: 2016-05-30
+* Version: 0.0.8
+* Date: 2016-05-31
 * Developer: [Alberto Pettarin](http://www.albertopettarin.it/)
 * License: the MIT License (MIT)
 * Contact: [click here](http://www.albertopettarin.it/contact.html)
@@ -15,7 +15,6 @@ Code, tools, APIs, etc. are subject to change without any further notice.
 Use at your own risk, until v1.0.0 is released (and this notice disappears).
 Current TODO list:
 
-* add an "apply" mode to the G2P Bash scripts, to map (unknown/new) words
 * write a tool to diff IPA/mapped lexica, including a "consider one of the two lexica as ground truth" switch
 * map eSpeak phones and/or create eSpeak voice from .symbol files
 
@@ -175,8 +174,11 @@ $ # train a G2P model using Sequitur G2P (hours)
 $ cd /tmp
 $ bash run_sequitur.sh train
 
-$ # test the trained G2P model
+$ # self-test the trained G2P model
 $ bash run_sequitur.sh test
+
+$ # apply the trained G2P model to the given lexicon
+$ bash run_sequitur.sh apply new_words.txt
 ```
 
 
