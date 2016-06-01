@@ -12,7 +12,7 @@ import os
 
 from wiktts import write_file
 from wiktts.commandlinetool import CommandLineTool
-from wiktts.mw.data import PLACEHOLDERS, Data, format_mwdata
+from wiktts.mw.data import PLACEHOLDERS, format_mwdata
 from wiktts.mw.miner.ipaextractor import IPAExtractor
 from wiktts.mw.miner.minerstatus import MinerStatus
 from wiktts.mw.parser import Parser
@@ -80,12 +80,17 @@ class Miner(CommandLineTool):
         {
             "name": "--all",
             "action": "store_true",
-            "help": "Print extraction results for all pages (with and without IPA string)"
+            "help": "Print extraction results for all pages (with/without correct language block)"
         },
         {
-            "name": "--without",
+            "name": "--all-with-lang",
             "action": "store_true",
-            "help": "Print extraction results only for pages without IPA string"
+            "help": "Print extraction results for all pages with correct language block (with/without IPA string)"
+        },
+        {
+            "name": "--without-ipa",
+            "action": "store_true",
+            "help": "Print extraction results only for pages with correct language block but without IPA string"
         },
         {
             "name": "--no-sort",
@@ -111,7 +116,7 @@ class Miner(CommandLineTool):
         def process_chunk(pages, status):
             status.update(ipaext.extract_from_pages(pages))
             if show_progress:
-                print("Pages Total/With IPA: %d / %d (%s)" % (status.pages_total, status.pages_with_ipa, status.percentage))
+                print(status.pretty_print(single_line=True))
 
         # get options
         ipa_parser = self.vargs["ipaparser"]
@@ -125,6 +130,9 @@ class Miner(CommandLineTool):
         print_stats = self.vargs["stats"] 
         sort_results = not self.vargs["no_sort"]
         template = self.vargs["format"]
+        all_pages = self.vargs["all"]
+        all_with_lang = self.vargs["all_with_lang"]
+        without_ipa = self.vargs["without_ipa"]
 
         # extract IPA strings
         status = MinerStatus()
@@ -146,22 +154,20 @@ class Miner(CommandLineTool):
         # format data if file or stdout output should be produced
         if (output_file_path is not None) or (not quiet):
             # select the data to include in the output
-            if self.vargs["all"]:
-                include_with = True
-                include_without = True
-            elif self.vargs["without"]:
-                include_with = False
-                include_without = True
+            if all_pages:
+                include = (True, True, True, True)
+            elif all_with_lang:
+                include = (True, False, True, True)
+            elif without_ipa:
+                include = (True, False, False, True)
             else:
-                include_with = True
-                include_without = False
+                include = (True, False, True, False)
             # format data
             formatted_data = format_mwdata(
                 status.mwdata,
                 template=template,
                 dump_file_path=dump_path,
-                include_with=include_with,
-                include_without=include_without
+                include=include
             )
             # sort if requested
             if sort_results:
@@ -175,9 +181,7 @@ class Miner(CommandLineTool):
 
         # print statistics if requested
         if print_stats:
-            print("Pages")
-            print("  Total:    %d" % status.pages_total)
-            print("  With IPA: %d (%s)" % (status.pages_with_ipa, status.percentage))
+            print(status.pretty_print(single_line=False))
 
 
 

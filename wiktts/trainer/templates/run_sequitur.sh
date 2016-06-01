@@ -54,7 +54,7 @@ run_train_order() {{
     echo "==============================" >> $LOG
     echo "Training model $L..." | tee -a $LOG
     echo "" >> $LOG
-    g2p.py --devel "$DEVEL" --train "$TRAIN" $R --write-model "$M" 2>> $LOG >> $LOG
+    g2p.py --enc "utf-8" --devel "$DEVEL" --train "$TRAIN" $R --write-model "$M" 2>> $LOG >> $LOG
     END=`date +%s`
     DIFF=`echo "$END - $START" | bc`
     echo "" >> $LOG
@@ -71,7 +71,7 @@ run_test() {{
         echo "[ERROR] To test at order $L you need file $M (i.e., train at order $L first)"
         exit 1
     fi
-    g2p.py --model "$M" --test "$TEST"
+    g2p.py --enc "utf-8" --model "$M" --test "$TEST"
 }}
 
 run_apply() {{
@@ -84,21 +84,22 @@ run_apply() {{
         echo "[ERROR] To apply at order $L you need file $M (i.e., train at order $L first)"
         exit 1
     fi
+    C="$F.nospaces"
     A="$F.applied"
+    sed -e 's/ //g' "$F" > "$C"
+    echo "[INFO] Removed spaces, created file $C"
     ALOG="$A.log"
     if [ "$V" -gt 1 ]
     then
-        g2p.py --model "$M" --apply "$F" --variants-number "$V" > "$A" 2> "$ALOG"
+        g2p.py --enc "utf-8" --model "$M" --apply "$C" --variants-number "$V" > "$A" 2> "$ALOG"
     else
-        g2p.py --model "$M" --apply "$F" > "$A" 2> "$ALOG"
+        g2p.py --enc "utf-8" --model "$M" --apply "$C" > "$A" 2> "$ALOG"
     fi
     echo "[INFO] Logged errors to file $ALOG"
     echo "[INFO] Created file $A"
 }}
 
 run_clean() {{
-    rm -f $TRAIN.*
-    rm -f $TEST.*
     rm -f $MODELPREFIX*
 }}
 

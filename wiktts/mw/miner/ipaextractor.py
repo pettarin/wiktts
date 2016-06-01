@@ -44,15 +44,25 @@ class IPAExtractor(object):
 
     def extract_from_pages(self, pages):
         mwdata = []
+        pages_with_language_block = 0
         pages_with_ipa = 0
         for p in pages:
-            ipa = self.ipa_parser.extract_ipa_string(p.revision_text)
-            if (len(p.title) > 0) and (ipa is not None) and (len(ipa) > 0):
-                mwdata.append(Data(True, p.id, p.title, ipa))
-                pages_with_ipa += 1
+            has_lang, ipa = self.ipa_parser.extract_ipa_string(p.revision_text)
+            if not has_lang:
+                mwdata.append(Data(False, False, p.id, p.title, None))
+            elif (len(p.title) < 1) or (ipa is None) or (len(ipa) < 1):
+                mwdata.append(Data(True, False, p.id, p.title, None))
+                pages_with_language_block += 1
             else:
-                mwdata.append(Data(False, p.id, p.title, None))
-        return ExtractionInfo(mwdata=mwdata, pages_total=len(pages), pages_with_ipa=pages_with_ipa)
+                mwdata.append(Data(True, True, p.id, p.title, ipa))
+                pages_with_language_block += 1
+                pages_with_ipa += 1
+        return ExtractionInfo(
+            mwdata=mwdata,
+            pages_total=len(pages),
+            pages_with_language_block=pages_with_language_block,
+            pages_with_ipa=pages_with_ipa
+        )
 
     def extract_from_string(self, string):
         return self.ipa_parser.extract_ipa_string(string)

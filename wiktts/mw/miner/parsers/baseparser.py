@@ -92,10 +92,14 @@ class BaseParser(object):
         """
         Extract the IPA string from the given string,
         representing the wikitext of a <page> (i.e., a word).
+
+        Return a tuple (has_lang, ipa), where has_lang is a bool
+        saying if the there is a correct language block in the text,
+        and ipa is the IPA string (or None).
         """
         lb_lines = self.find_language_block(text)
         if lb_lines is None:
-            return None
+            return (False, None)
         #print("=== LANGUAGE BLOCK ===")
         #for line in lb_lines:
         #    print(line)
@@ -104,7 +108,7 @@ class BaseParser(object):
 
         pb_lines = self.find_pronunciation_block(lb_lines)
         if pb_lines is None:
-            return None
+            return (True, None)
         #print("=== PRONUNCIATION BLOCK ===")
         #for line in pb_lines:
         #    print(line)
@@ -113,13 +117,13 @@ class BaseParser(object):
         
         ipa = self.find_ipa(pb_lines)
         if ipa is None:
-            return None
+            return (True, None)
 
         ipa = self.keep_first_only(ipa)
         ipa = self.remove_ipa_delimiters(ipa)
         if ipa in self.IPA_NONE:
-            return None
-        return ipa 
+            return (True, None)
+        return (True, ipa)
 
     def remove_ipa_delimiters(self, ipa_candidate):
         """

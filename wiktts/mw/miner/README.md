@@ -49,8 +49,8 @@ $ python -m wiktts.mw.miner --help
 
 usage: __main__.py [-h] [--from-dir] [--output-file [OUTPUT_FILE]]
                    [--pages-per-chunk [PAGES_PER_CHUNK]] [--ns NS [NS ...]]
-                   [--hide-progress] [--quiet] [--all] [--without] [--no-sort]
-                   [--stats] [--format [FORMAT]]
+                   [--hide-progress] [--quiet] [--all] [--all-with-lang]
+                   [--without-ipa] [--no-sort] [--stats] [--format [FORMAT]]
                    ipaparser dump
 
 Extract IPA strings from a given MediaWiki dump file.
@@ -61,7 +61,7 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  --from-dir            Load .xml files inside dump directory
+  --from-dir            Load .xml files inside this dump directory
   --output-file [OUTPUT_FILE]
                         Write output to file
   --pages-per-chunk [PAGES_PER_CHUNK]
@@ -70,15 +70,17 @@ optional arguments:
                         (default: [0])
   --hide-progress       Do not print extraction progress messages
   --quiet               Do not print extraction results to stdout
-  --all                 Print extraction results for all pages (with and
-                        without IPA string)
-  --without             Print extraction results only for pages without IPA
-                        string
+  --all                 Print extraction results for all pages (with/without
+                        correct language block)
+  --all-with-lang       Print extraction results for all pages with correct
+                        language block (with/without IPA string)
+  --without-ipa         Print extraction results only for pages with correct
+                        language block but without IPA string
   --no-sort             Do not sort the extraction results
-  --stats               Print the count of all pages and pages with IPA string
-  --format [FORMAT]     Format output according to this string (available
+  --stats               Print statistics
+  --format [FORMAT]     Format output according to this template (available
                         placeholders: {ID}, {WORD}, {IPA}, {EXTRACTED},
-                        {FILENAME}, {FILEPATH})
+                        {HASLANGUAGEBLOCK}, {FILENAME}, {FILEPATH})
 ```
 
 
