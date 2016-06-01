@@ -20,7 +20,8 @@ ANSI_NORMAL = u"\033[0m"
 
 class ComparisonResult(object):
 
-    def __init__(self, equal, l1, l2, ops):
+    def __init__(self, word, equal, l1, l2, ops):
+        self.word = word
         self.equal = equal
         self.l1 = l1
         self.l2 = l2
@@ -105,10 +106,10 @@ class Comparator(object):
             return self.lexicon2.words - self.lexicon1.words
         return set() 
 
-    def compare_phones(self, p1, p2):
+    def compare_phones(self, word, p1, p2):
         # shortcut if they are equal
         if p1 == p2:
-            return ComparisonResult(True, len(p1), len(p2), [("m", p) for p in p1])
+            return ComparisonResult(word, True, len(p1), len(p2), [("m", p) for p in p1])
         # fill edit distance matrix
         matrix = [[0 for j in range(1 + len(p2))] for i in range(1 + len(p1))]
         for i in range(1 + len(p1)):
@@ -149,7 +150,7 @@ class Comparator(object):
                 ops.append((op, p1[i-1], p2[j-1]))
                 i -= 1
                 j -= 1
-        return ComparisonResult(False, len(p1), len(p2), ops[::-1])
+        return ComparisonResult(word, False, len(p1), len(p2), ops[::-1])
 
     def compare(self, compare_first_only=True):
         common = self.words_in_common
@@ -172,7 +173,7 @@ class Comparator(object):
             e1 = self.lexicon1.entries_for_word(w)
             e2 = self.lexicon2.entries_for_word(w)
             if compare_first_only:
-                r = self.compare_phones(e1[0].phones, e2[0].phones)
+                r = self.compare_phones(w, e1[0].phones, e2[0].phones)
                 res[u"phones1"] += r.l1
                 res[u"phones2"] += r.l2
                 res[u"phones_correct"] += r.matches

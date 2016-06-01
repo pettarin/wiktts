@@ -1,10 +1,10 @@
-# Module mw
+# wiktts.mw
 
-## mw.splitter 
+## wiktts.mw.splitter 
 
 Please see [splitter/README.md](splitter/README.md).
 
-## mw.miner
+## wiktts.mw.miner
 
 Please see [miner/README.md](miner/README.md).
 

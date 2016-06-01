@@ -20,7 +20,8 @@ class CommandLineTool(object):
 
     # overload in the actual subclass
     #
-    AP_DESCRIPTION = "Generic Command Line Tool"
+    AP_PROGRAM = sys.argv[0]
+    AP_DESCRIPTION = u"Generic Command Line Tool"
     AP_ARGUMENTS = [
         # implement in the actual 
         #
@@ -33,7 +34,7 @@ class CommandLineTool(object):
     ]
 
     def __init__(self):
-        self.parser = argparse.ArgumentParser(description=self.AP_DESCRIPTION)
+        self.parser = argparse.ArgumentParser(prog=self.AP_PROGRAM, description=self.AP_DESCRIPTION)
         self.vargs = None
         for arg in self.AP_ARGUMENTS:
             if "action" in arg:
@@ -48,11 +49,17 @@ class CommandLineTool(object):
 
     # overload this in your actual subclass
     def actual_command(self):
-        print("This script does nothing. Invoke another .py")
+        self.print_stdout(u"This script does nothing. Invoke another .py")
 
     def error(self, message):
-        print("ERROR: %s" % message)
+        self.print_stderr(u"ERROR: %s" % message)
         sys.exit(1)
+
+    def print_stdout(self, *args, **kwargs):
+        print(*args, **kwargs)
+
+    def print_stderr(self, *args, **kwargs):
+        print(*args, file=sys.stderr, **kwargs)
 
 
 

@@ -7,6 +7,7 @@ TBW
 
 from __future__ import absolute_import
 from __future__ import print_function
+from __future__ import division 
 import io
 import os
 import random
@@ -257,6 +258,21 @@ class Lexicon(object):
         comment_string = comment if comment_invalid else u""
         # format data
         return [e.format_entry(template, comment_string) for e in self.selected_entries]
+
+    def pretty_print_stats(self):
+        total = len(self.entries)
+        rv = len([e for e in self.entries if e.raw_ipa_is_valid])
+        rv_perc = 100 * rv / total
+        cv = len([e for e in self.entries if e.cleaned_ipa_is_valid])
+        cv_perc = 100 * cv / total
+        acc = []
+        acc.append(u"Words")
+        acc.append(u"  Total:           %d" % total)
+        acc.append(u"  Valid   Raw:     %d (%0.3f%%)" % (rv, rv_perc))
+        acc.append(u"  Invalid Raw:     %d (%0.3f%%)" % (total - rv, 100.0 - rv_perc))
+        acc.append(u"  Valid   Cleaned: %d (%0.3f%%)" % (cv, cv_perc))
+        acc.append(u"  Invalid Cleaned: %d (%0.3f%%)" % (total - cv, 100.0 - cv_perc))
+        return u"\n".join(acc)
 
 
 

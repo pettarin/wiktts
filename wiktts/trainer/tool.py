@@ -9,31 +9,23 @@ from __future__ import absolute_import
 from __future__ import print_function
 import io
 import os
-import random
 import shutil
-
-from ipapy import IPA_TO_UNICODE
-from ipapy import UNICODE_TO_IPA
 
 __author__ = "Alberto Pettarin"
 __copyright__ = "Copyright 2016, Alberto Pettarin (www.albertopettarin.it)"
 __license__ = "MIT"
 __email__ = "alberto@albertopettarin.it"
 
-TOOLS = [
-    u"phonetisaurus_08a",
-    u"phonetisaurus_master",
-    u"sequitur"
-]
-
 class Tool(object):
+
+    TEMPLATES_DIRECTORY_PATH = u"templates"
 
     def __init__(self, lexicon, mapper):
         self.lexicon = lexicon
         self.mapper = mapper
 
     def _format_g2p_input(self, entries):
-        raise NotImplementedError("You must use a concrete subclass of Tool")
+        raise NotImplementedError(u"You must use a concrete subclass of Tool")
 
     def format_train(self):
         return self._format_g2p_input(self.lexicon.train)
@@ -42,21 +34,25 @@ class Tool(object):
         return self._format_g2p_input(self.lexicon.test)
 
     def format_words(self, train=False, test=True, sort=False):
+        def format_list(where):
+            return [e.cleaned_word_unicode for e in where]
         acc = []
         if train:
-            acc.extend([e.cleaned_word_unicode for e in self.lexicon.train])
+            acc.extend(format_list(self.lexicon.train))
         if test:
-            acc.extend([e.cleaned_word_unicode for e in self.lexicon.test])
+            acc.extend(format_list(self.lexicon.test))
         if sort:
             return sorted(acc)
         return acc
 
     def format_symbols(self, train=False, test=True, sort=True):
+        def format_set(where):
+            return set([u"%s\t%s\t%s" % (self.mapper[(p.canonical_representation,)], p.name, p.unicode_repr) for p in where])
         acc = set()
         if train:
-            acc |= set([u"%s\t%s\t%s" % (self.mapper[(p.canonical_representation,)], p.name, p.unicode_repr) for p in self.lexicon.train_symbol_set])
+            acc |= format_set(self.lexicon.train_symbol_set)
         if test:
-            acc |= set([u"%s\t%s\t%s" % (self.mapper[(p.canonical_representation,)], p.name, p.unicode_repr) for p in self.lexicon.test_symbol_set])
+            acc |= format_set(self.lexicon.test_symbol_set)
         acc = list(acc)
         if sort:
             return sorted(acc)
@@ -64,11 +60,15 @@ class Tool(object):
 
     @classmethod
     def format_script(cls, parameters):
-        template_file_path = os.path.join(os.path.dirname(__file__), cls.SCRIPT_TEMPLATE_FILE_PATH)
+        template_file_path = os.path.join(
+            os.path.dirname(__file__),
+            cls.TEMPLATES_DIRECTORY_PATH,
+            cls.SCRIPT_FILE_NAME
+        )
         with io.open(template_file_path, "r", encoding="utf-8") as template_file:
             template = template_file.read()
         if u"base" not in parameters:
-            raise ValueError("The parameters dictionary does not contain a 'base' key.")
+            raise ValueError(u"The parameters dictionary does not contain a 'base' key.")
         d = dict()
         d.update(cls.DEFAULT_PARAMETERS)
         d.update(parameters)
@@ -76,7 +76,7 @@ class Tool(object):
 
     @classmethod
     def _format_script_contents(cls, template, d):
-        raise NotImplementedError("You must override this function in concrete subclasses.")
+        raise NotImplementedError(u"You must override this function in concrete subclasses.")
 
 
 
@@ -101,16 +101,14 @@ class ToolPhonetisaurusMaster(Tool):
 
     """
 
-    DEFAULT_SCRIPT_NAME = u"run_phonetisaurus_master.sh"
-
-    SCRIPT_TEMPLATE_FILE_PATH = u"templates/run_phonetisaurus_master.sh"
-
-    COMPUTE_ER = u"templates/compute_er_phonetisaurus_master.py"
+    COMPUTE_ER = u"compute_er_phonetisaurus_master.py"
+    
+    SCRIPT_FILE_NAME = u"run_phonetisaurus_master.sh"
 
     DEFAULT_PARAMETERS = {
-        "phonetisaurus_ngramorder": "8",
-        "phonetisaurus_smoothing": "FixKN",
-        "phonetisaurus_variants": "1",
+        u"ngramorder": u"8",
+        u"smoothing": u"FixKN",
+        u"variants": u"1",
     }
 
     def _format_g2p_input(self, entries):
@@ -121,14 +119,18 @@ class ToolPhonetisaurusMaster(Tool):
         # copy COMPUTE_ER tool, derived from Phonetisaurus 0.8a,
         # to the destination directory,
         # since the tools on the current master seems to lack the "compute ER" feature
-        src_path = os.path.join(os.path.dirname(__file__), cls.COMPUTE_ER)
-        dest_path = os.path.join(d["output_dir_path"], os.path.basename(cls.COMPUTE_ER))
+        src_path = os.path.join(
+            os.path.dirname(__file__),
+            cls.TEMPLATES_DIRECTORY_PATH,
+            cls.COMPUTE_ER
+        )
+        dest_path = os.path.join(d["output_dir_path"], cls.COMPUTE_ER)
         shutil.copyfile(src_path, dest_path)
         return template.format(
             BASE=d["base"],
-            NGRAMORDER=d["phonetisaurus_ngramorder"],
-            SMOOTHING=d["phonetisaurus_smoothing"],
-            VARIANTS=d["phonetisaurus_variants"],
+            NGRAMORDER=d["ngramorder"],
+            SMOOTHING=d["smoothing"],
+            VARIANTS=d["variants"],
             ERPY=dest_path,
         )
 
@@ -140,15 +142,13 @@ class ToolPhonetisaurus08a(Tool):
     https://code.google.com/archive/p/phonetisaurus/
     """
 
-    DEFAULT_SCRIPT_NAME = u"run_phonetisaurus_08a.sh"
-
-    SCRIPT_TEMPLATE_FILE_PATH = u"templates/run_phonetisaurus_08a.sh"
+    SCRIPT_FILE_NAME = u"run_phonetisaurus_08a.sh"
 
     DEFAULT_PARAMETERS = {
-        "phonetisaurus_ngramorder": "8",
-        "phonetisaurus_smoothing": "FixKN",
-        "phonetisaurus_decoder": "fst_phi",
-        "phonetisaurus_variants": "1",
+        u"ngramorder": u"8",
+        u"smoothing": u"FixKN",
+        u"decoder": u"fst_phi",
+        u"variants": u"1",
     }
 
     def _format_g2p_input(self, entries):
@@ -158,10 +158,10 @@ class ToolPhonetisaurus08a(Tool):
     def _format_script_contents(cls, template, d):
         return template.format(
             BASE=d["base"],
-            NGRAMORDER=d["phonetisaurus_ngramorder"],
-            SMOOTHING=d["phonetisaurus_smoothing"],
-            DECODER=d["phonetisaurus_decoder"],
-            VARIANTS=d["phonetisaurus_variants"],
+            NGRAMORDER=d["ngramorder"],
+            SMOOTHING=d["smoothing"],
+            DECODER=d["decoder"],
+            VARIANTS=d["variants"],
         )
 
 
@@ -171,14 +171,12 @@ class ToolSequitur(Tool):
     Sequitur r1668-r3 (2016-04-25)
     """
 
-    DEFAULT_SCRIPT_NAME = u"run_sequitur.sh"
-
-    SCRIPT_TEMPLATE_FILE_PATH = u"templates/run_sequitur.sh"
+    SCRIPT_FILE_NAME = u"run_sequitur.sh"
 
     DEFAULT_PARAMETERS = {
-        "sequitur_devel": "5",
-        "sequitur_maxorder": "8",
-        "sequitur_variants": "1"
+        u"devel": u"5",
+        u"maxorder": u"8",
+        u"variants": u"1"
     }
 
     def _format_g2p_input(self, entries):
@@ -190,10 +188,18 @@ class ToolSequitur(Tool):
     def _format_script_contents(cls, template, d):
         return template.format(
             BASE=d["base"],
-            DEVEL=d["sequitur_devel"],
-            MAXORDER=d["sequitur_maxorder"],
-            VARIANTS=d["sequitur_variants"]
+            DEVEL=d["devel"],
+            MAXORDER=d["maxorder"],
+            VARIANTS=d["variants"]
         )
+
+
+
+TOOLS = {
+    u"phonetisaurus_08a": ToolPhonetisaurus08a,
+    u"phonetisaurus_master": ToolPhonetisaurusMaster,
+    u"sequitur": ToolSequitur,
+}
 
 
 

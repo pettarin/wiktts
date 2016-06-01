@@ -1,4 +1,4 @@
-# mwminer 
+# wiktts.mw.miner 
 
 **Mine IPA strings from a MediaWiki dump.**
 
@@ -7,10 +7,19 @@
 
 A **MediaWiki dump file**, either uncompressed (``.xml``) or compressed (``.xml.bz2``), or a directory containing chunks (``.xml``).
 
+You also need to specify an IPA parser,
+either the name of a built-in one or a path to its Python source code,
+and the path of the output directory.
+
 
 ## Output
 
-An UTF-8 encoded file,
+Two files will be created in the specified output directory:
+
+* a ``.lex`` file, containing the mined pronunciation lexicon,
+* a ``.stats`` file, containing the statistics of the extraction process.
+
+The pronunciation lexicon is an UTF-8 encoded file,
 containing one tab-separated pair ``word\tIPA``
 per line, where:
 
@@ -22,19 +31,24 @@ The mined **word string is not modified** in any way.
 The mined **IPA string is modified by removing the leading and trailing ``/.../`` or ``[...]`` only**.
 Hence, you might need to clean it further,
 depending on the intended application.
-See the ``wiktts.ipacleaner`` module for details.
+See the ``wiktts.lexcleaner`` module for details.
 
 
 ## Usage
 
 ```bash
-$ python -m wiktts.mw.mwminer PARSER DUMP [OPTIONS]
+$ python -m wiktts.mw.mwminer PARSER DUMP OUTPUTDIR [OPTIONS]
 ```
 
-Example:
+Examples:
 
 ```bash
-$ python -m wiktts.mw.mwminer enwiktionary enwiktionary-20160407-pages-meta-current.xml.bz2 --output-file enwiktionary-20160407.txt
+$ python -m wiktts.mw.miner enwiktionary enwiktionary-20160407-pages-meta-current.xml.bz2 /tmp/ 
+$ python -m wiktts.mw.miner enwiktionary enwiktionary-20160407-pages-meta-current.xml.bz2 /tmp/ --hide-progress --stats
+$ python -m wiktts.mw.miner enwiktionary enwiktionary-20160407-pages-meta-current.xml.bz2 /tmp/ --all
+$ python -m wiktts.mw.miner enwiktionary enwiktionary-20160407-pages-meta-current.xml.bz2 /tmp/ --all-with-lang
+$ python -m wiktts.mw.miner enwiktionary enwiktionary-20160407-pages-meta-current.xml.bz2 /tmp/ --without-ipa
+$ python -m wiktts.mw.miner enwiktionary enwiktionary-20160407-pages-meta-current.xml.bz2 /tmp/ --format "{ID} {WORD} {IPA}"
 ```
 
 Please note that processing big MediaWiki dump files might take several minutes.
@@ -47,29 +61,27 @@ Invoke with ``--help`` to get the list of available options:
 ```bash
 $ python -m wiktts.mw.miner --help
 
-usage: __main__.py [-h] [--from-dir] [--output-file [OUTPUT_FILE]]
-                   [--pages-per-chunk [PAGES_PER_CHUNK]] [--ns NS [NS ...]]
-                   [--hide-progress] [--quiet] [--all] [--all-with-lang]
-                   [--without-ipa] [--no-sort] [--stats] [--format [FORMAT]]
-                   ipaparser dump
+usage: wiktts.mw.miner [-h] [--pages-per-chunk [PAGES_PER_CHUNK]]
+                       [--namespaces NAMESPACES [NAMESPACES ...]] [--all]
+                       [--all-with-lang] [--without-ipa] [--no-sort]
+                       [--hide-progress] [--stats] [--stdout]
+                       [--format [FORMAT]]
+                       ipaparser dump outputdir
 
 Extract IPA strings from a given MediaWiki dump file.
 
 positional arguments:
   ipaparser             IPA parser (built-in name or file path)
   dump                  MediaWiki dump file (.xml or .xml.bz2) or directory
+  outputdir             Output files in this directory
 
 optional arguments:
   -h, --help            show this help message and exit
-  --from-dir            Load .xml files inside this dump directory
-  --output-file [OUTPUT_FILE]
-                        Write output to file
   --pages-per-chunk [PAGES_PER_CHUNK]
                         Number of pages per output file (default: 1000)
-  --ns NS [NS ...]      Extract only pages with the specified ns values
-                        (default: [0])
-  --hide-progress       Do not print extraction progress messages
-  --quiet               Do not print extraction results to stdout
+  --namespaces NAMESPACES [NAMESPACES ...]
+                        Extract only pages with namespace in the specified
+                        list (default: [0])
   --all                 Print extraction results for all pages (with/without
                         correct language block)
   --all-with-lang       Print extraction results for all pages with correct
@@ -77,7 +89,9 @@ optional arguments:
   --without-ipa         Print extraction results only for pages with correct
                         language block but without IPA string
   --no-sort             Do not sort the extraction results
-  --stats               Print statistics
+  --hide-progress       Do not print extraction progress messages
+  --stats               Print statistics to standard output
+  --stdout              Print extraction results to standard output
   --format [FORMAT]     Format output according to this template (available
                         placeholders: {ID}, {WORD}, {IPA}, {EXTRACTED},
                         {HASLANGUAGEBLOCK}, {FILENAME}, {FILEPATH})
@@ -226,10 +240,15 @@ derivato dal latino ''[[liber]]''
 invoking:
 
 ```bash
-$ python -m wiktts.mw.mwminer itwiktionary itwiktionary-20160407-pages-meta-current.xml.bz2 --output-file itwiktionary-20160407.txt
+$ python -m wiktts.mw.miner itwiktionary itwiktionary-20160407-pages-meta-current.xml.bz2 /tmp/ 
 ```
 
-will produce (spaces added for clarity):
+will create two file:
+
+* ``/tmp/itwiktionary-20160407-pages-meta-current.xml.bz2.lex``, and
+* ``/tmp/itwiktionary-20160407-pages-meta-current.xml.bz2.stats``,
+
+with the first containing:
 
 ```
 ...

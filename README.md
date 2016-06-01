@@ -2,8 +2,8 @@
 
 Mining MediaWiki dumps to create better TTS engines (using Machine Learning)
 
-* Version: 0.0.8
-* Date: 2016-05-31
+* Version: 0.0.9
+* Date: 2016-06-01
 * Developer: [Alberto Pettarin](http://www.albertopettarin.it/)
 * License: the MIT License (MIT)
 * Contact: [click here](http://www.albertopettarin.it/contact.html)
@@ -125,7 +125,7 @@ $ python -m wiktts.mw.splitter DUMP.XML[.BZ2] [OPTIONS]
 ### wiktts.mw.miner
 
 ```bash
-$ python -m wiktts.mw.miner PARSER DUMP [OPTIONS]
+$ python -m wiktts.mw.mwminer PARSER DUMP OUTPUTDIR [OPTIONS]
 ```
 
 [Details](wiktts/mw/miner/README.md)
@@ -133,7 +133,7 @@ $ python -m wiktts.mw.miner PARSER DUMP [OPTIONS]
 ### wiktts.lexcleaner
 
 ```bash
-$ python -m wiktts.lexcleaner LEXICON [OPTIONS]
+$ python -m wiktts.lexcleaner LEXICON OUTPUTDIR [OPTIONS]
 ```
 
 [Details](wiktts/lexcleaner/README.md)
@@ -155,20 +155,21 @@ will require several minutes/hours to run.
 ```bash
 $ # clone the repo
 $ git clone https://github.com/pettarin/wiktts.git
-$ cd wiktts/dumps
+$ cd wiktts
 
 $ # download the English Wiktionary dump (minutes)
-$ wget "https://dumps.wikimedia.org/enwiktionary/20160407/enwiktionary-20160407-pages-meta-current.xml.bz2"
+$ cd dumps
+$ wget "https://dumps.wikimedia.org/enwiktionary/20160407/enwiktionary-20160407-pages-meta-current.xml.bz2" -O enwiktionary-20160407.xml.bz2
 $ cd ..
 
 $ # extract the IPA strings (minutes)
-$ python -m wiktts.mw.miner enwiktionary dumps/enwiktionary-20160407-pages-meta-current.xml.bz2 --output-file /tmp/enwiktionary-20160407.lex
+$ python -m wiktts.mw.miner enwiktionary dumps/enwiktionary-20160407.xml.bz2 /tmp/ 
 
 $ # clean the mined (word, IPA) pairs (minutes)
-$ python -m wiktts.lexcleaner /tmp/enwiktionary-20160407.lex --output-file /tmp/enwiktionary-20160407.lex.clean
+$ python -m wiktts.lexcleaner /tmp/enwiktionary-20160407.xml.bz2.lex /tmp/
 
 $ # create train/test/symbol files for Sequitur G2P (minutes)
-$ python -m wiktts.trainer sequitur /tmp/enwiktionary-20160407.lex.clean /tmp/
+$ python -m wiktts.trainer sequitur /tmp/enwiktionary-20160407.xml.bz2.lex.clean /tmp/
 
 $ # train a G2P model using Sequitur G2P (hours)
 $ cd /tmp
@@ -200,7 +201,7 @@ Alberto Pettarin. wiktts [VERSION_YOU_USE]. https://github.com/pettarin/wiktts (
 For example:
 
 ```
-Alberto Pettarin. wiktts v0.0.8. https://github.com/pettarin/wiktts (last access: 2016-06-01).
+Alberto Pettarin. wiktts v0.0.9. https://github.com/pettarin/wiktts (last access: 2016-06-01).
 ```
 
 For a list of resources used to design and implement **wiktts**,

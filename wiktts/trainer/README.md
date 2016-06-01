@@ -1,4 +1,4 @@
-# trainer 
+# wiktts.trainer 
 
 Prepare train/test/symbol files for ML tools.
 
@@ -46,10 +46,15 @@ with a syntax appropriate for the specified ML tool:
 $ python -m wiktts.trainer TOOL LEXICON OUTPUTDIR [OPTIONS]
 ```
 
-Example:
+Examples:
 
 ```bash
 $ python -m wiktts.trainer sequitur enwiktionary-20160407.lex.clean /tmp/
+$ python -m wiktts.trainer sequitur enwiktionary-20160407.lex.clean /tmp/ --script-only
+$ python -m wiktts.trainer sequitur enwiktionary-20160407.lex.clean /tmp/ --lowercase
+$ python -m wiktts.trainer sequitur enwiktionary-20160407.lex.clean /tmp/ --train-size-frac 0.8
+$ python -m wiktts.trainer sequitur enwiktionary-20160407.lex.clean /tmp/ --mapper kirshenbaum
+$ python -m wiktts.trainer sequitur enwiktionary-20160407.lex.clean /tmp/ --mapper arpabet 
 ```
 
 Processing big lexicon files (>100k words) might take a couple of minutes.
@@ -62,21 +67,20 @@ Invoke with ``--help`` to get the list of available options:
 ```bash
 $ python -m wiktts.trainer --help
 
-usage: __main__.py [-h] [--chars [CHARS]] [--mapper [MAPPER]]
-                   [--comment [COMMENT]] [--delimiter [DELIMITER]]
-                   [--word-index [WORD_INDEX]] [--ipa-index [IPA_INDEX]]
-                   [--train-size-int [TRAIN_SIZE_INT]]
-                   [--train-size-frac [TRAIN_SIZE_FRAC]] [--quiet] [--stats]
-                   [--output-script-only]
-                   [--script-parameters [SCRIPT_PARAMETERS]]
-                   [--create-output-dir] [--lowercase]
-                   tool lexicon outputdir
+usage: wiktts.trainer [-h] [--chars [CHARS]] [--mapper [MAPPER]]
+                      [--comment [COMMENT]] [--delimiter [DELIMITER]]
+                      [--word-index [WORD_INDEX]] [--ipa-index [IPA_INDEX]]
+                      [--train-size-int [TRAIN_SIZE_INT]]
+                      [--train-size-frac [TRAIN_SIZE_FRAC]] [--stats]
+                      [--script-only]
+                      [--script-parameters [SCRIPT_PARAMETERS]] [--lowercase]
+                      tool lexicon outputdir
 
 Prepare train/test/symbol files for ML tools.
 
 positional arguments:
   tool                  ML tool
-                        [phonetisaurus_08a|phonetisaurus_master|sequitur]
+                        [sequitur|phonetisaurus_08a|phonetisaurus_master]
   lexicon               Clean lexicon input file
   outputdir             Write output files to this directory
 
@@ -100,88 +104,127 @@ optional arguments:
   --train-size-frac [TRAIN_SIZE_FRAC]
                         Size of the train set relative to valid lexicon size
                         (default: 0.9)
-  --quiet               Do not print results to stdout
   --stats               Print statistics
-  --output-script-only  Only output the Bash script to run the ML tool
+  --script-only         Only output the Bash script to run the ML tool
   --script-parameters [SCRIPT_PARAMETERS]
                         Parameters to configure the Bash script to run the ML
                         tool
-  --create-output-dir   Create the output directory if it does not exist
   --lowercase           Lowercase all the words
 ```
 
-## Examples
 
-Create train/test/symbol files for Sequitur G2P:
+## Example
+
+Assuming a clean lexicon file ``enwiktionary-20160407.lex.clean`` exists:
 
 ```bash
-$ python -m wiktts.trainer sequitur enwiktionary-20160407.lex /tmp/
+$ python -m wiktts.trainer sequitur enwiktionary-20160407.lex.clean /tmp/
 
-Created file: /tmp/enwiktionary-20160407.lex.train
-Created file: /tmp/enwiktionary-20160407.lex.train.words
-Created file: /tmp/enwiktionary-20160407.lex.train.symbols
-Created file: /tmp/enwiktionary-20160407.lex.test
-Created file: /tmp/enwiktionary-20160407.lex.test.words
-Created file: /tmp/enwiktionary-20160407.lex.test.symbols
-Created file: /tmp/enwiktionary-20160407.lex.words
-Created file: /tmp/enwiktionary-20160407.lex.symbols
+Created file: /tmp/enwiktionary-20160407.lex.clean.train
+Created file: /tmp/enwiktionary-20160407.lex.clean.train.words
+Created file: /tmp/enwiktionary-20160407.lex.clean.train.symbols
+Created file: /tmp/enwiktionary-20160407.lex.clean.test
+Created file: /tmp/enwiktionary-20160407.lex.clean.test.words
+Created file: /tmp/enwiktionary-20160407.lex.clean.test.symbols
+Created file: /tmp/enwiktionary-20160407.lex.clean.words
+Created file: /tmp/enwiktionary-20160407.lex.clean.symbols
+Created file: /tmp/enwiktionary-20160407.lex.clean.trainer_stats
 Created file: /tmp/run_sequitur.sh
 ```
 
-Print statistics:
+where the first lines of ``/tmp/enwiktionary-20160407.lex.clean.train`` look like:
+
+```
+coelacanth 013 046 005 038 082 085 007 050
+sixths 013 092 082 013
+rorqual 014 024 014 082 017 038 005
+complexity 082 038 028 031 005 089 082 013 092 009 046
+Hannah 056 085 007 038
+colthood 082 038 090 005 009 056 090 008
+dinghy 008 092 069 081 046
+lidar 005 087 092 008 025 001
+broiler 030 001 026 092 005 038
+...
+```
+
+and ``/tmp/enwiktionary-20160407.lex.clean.symbols`` has the symbol-to-IPA map:
+
+```
+001	voiced alveolar approximant consonant	ɹ
+002	voiceless alveolar approximant consonant	ɹ̥
+003	voiced alveolar flap consonant	ɾ
+004	voiced alveolar lateral-approximant velarized consonant	lˠ
+005	voiced alveolar lateral-approximant consonant	l
+006	voiceless alveolar lateral-fricative consonant	ɬ
+007	voiced alveolar nasal consonant	n
+008	voiced alveolar plosive consonant	d
+009	voiceless alveolar plosive consonant	t
+...
+```
+
+To create the Bash script only:
 
 ```bash
-$ python -m wiktts.trainer sequitur enwiktionary-20160407.lex /tmp/ --stats
+$ python -m wiktts.trainer sequitur enwiktionary-20160407.lex.clean /tmp/ --script-only
 
+Created file: /tmp/run_sequitur.sh
+```
+
+To print statistics:
+
+```bash
+$ python -m wiktts.trainer sequitur enwiktionary-20160407.lex.clean /tmp/ --stats
+
+Created file: /tmp/enwiktionary-20160407.lex.clean.train
+Created file: /tmp/enwiktionary-20160407.lex.clean.train.words
+Created file: /tmp/enwiktionary-20160407.lex.clean.train.symbols
+Created file: /tmp/enwiktionary-20160407.lex.clean.test
+Created file: /tmp/enwiktionary-20160407.lex.clean.test.words
+Created file: /tmp/enwiktionary-20160407.lex.clean.test.symbols
+Created file: /tmp/enwiktionary-20160407.lex.clean.words
+Created file: /tmp/enwiktionary-20160407.lex.clean.symbols
+Created file: /tmp/enwiktionary-20160407.lex.clean.trainer_stats
+Created file: /tmp/run_sequitur.sh
 Words:
-  Total: 33871
-  Train: 30483
-  Test:  3388
+  Total: 36954
+  Train: 33258
+  Test:  3696
 Symbols:
-  Total: 88
-  Train: 87
+  Total: 92
+  Train: 92
   Test:  63
-Created file: /tmp/enwiktionary-20160407.lex.train
-Created file: /tmp/enwiktionary-20160407.lex.train.words
-Created file: /tmp/enwiktionary-20160407.lex.train.symbols
-Created file: /tmp/enwiktionary-20160407.lex.test
-Created file: /tmp/enwiktionary-20160407.lex.test.words
-Created file: /tmp/enwiktionary-20160407.lex.test.symbols
-Created file: /tmp/enwiktionary-20160407.lex.words
-Created file: /tmp/enwiktionary-20160407.lex.symbols
+```
+
+To use the Kirshenbaum ASCII IPA mapper:
+
+```bash
+$ python -m wiktts.trainer sequitur enwiktionary-20160407.lex.clean /tmp/ --mapper kirshenbaum
+
+Created file: /tmp/enwiktionary-20160407.lex.clean.train
+Created file: /tmp/enwiktionary-20160407.lex.clean.train.words
+Created file: /tmp/enwiktionary-20160407.lex.clean.train.symbols
+Created file: /tmp/enwiktionary-20160407.lex.clean.test
+Created file: /tmp/enwiktionary-20160407.lex.clean.test.words
+Created file: /tmp/enwiktionary-20160407.lex.clean.test.symbols
+Created file: /tmp/enwiktionary-20160407.lex.clean.words
+Created file: /tmp/enwiktionary-20160407.lex.clean.symbols
+Created file: /tmp/enwiktionary-20160407.lex.clean.trainer_stats
 Created file: /tmp/run_sequitur.sh
 ```
 
-Split the given lexicon into 80% train + 20% test (instead of default 90% train + 10% test):
+where the first lines of ``/tmp/enwiktionary-20160407.lex.clean.train`` look like:
 
-```bash
-$ python -m wiktts.trainer sequitur enwiktionary-20160407.lex /tmp/ --stats --train-size-frac 0.8
-
-Words:
-  Total: 33871
-  Train: 27096
-  Test:  6775
-Symbols:
-  Total: 88
-  Train: 84
-  Test:  72
-Created file: /tmp/enwiktionary-20160407.lex.train
-Created file: /tmp/enwiktionary-20160407.lex.train.words
-Created file: /tmp/enwiktionary-20160407.lex.train.symbols
-Created file: /tmp/enwiktionary-20160407.lex.test
-Created file: /tmp/enwiktionary-20160407.lex.test.words
-Created file: /tmp/enwiktionary-20160407.lex.test.symbols
-Created file: /tmp/enwiktionary-20160407.lex.words
-Created file: /tmp/enwiktionary-20160407.lex.symbols
-Created file: /tmp/run_sequitur.sh
 ```
-
-Create only the Bash script:
-
-```bash
-$ python -m wiktts.trainer sequitur enwiktionary-20160407.lex.clean  /tmp/ --output-script-only
-
-Created file: /tmp/run_sequitur.sh
+zooplasty z o U @ p l & s t i
+duppy d V p i
+sedge s E dZ
+cinema s I n @ m A
+Ogham o U @ m
+pegs p E g z
+cen- s i n
+down d a U n
+pedication p E d I k e I S @ n
+...
 ```
 
 

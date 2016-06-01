@@ -8,7 +8,6 @@ TBW
 from __future__ import absolute_import
 from __future__ import division 
 from __future__ import print_function
-import os
 
 from wiktts import write_file
 from wiktts.commandlinetool import CommandLineTool
@@ -39,53 +38,11 @@ class LexDiffer(CommandLineTool):
             "help": "First lexicon"
         },
         {
-            "name": "--comment",
+            "name": "--output-file",
             "nargs": "?",
             "type": str,
-            "default": u"#",
-            "help": "Ignore lines in the lexicon file starting with this string (default: '#')"
-        },
-        {
-            "name": "--delimiter",
-            "nargs": "?",
-            "type": str,
-            "default": "\t",
-            "help": "Field delimiter of the lexicon file (default: '\\t')"
-        },
-        {
-            "name": "--phones-delimiter",
-            "nargs": "?",
-            "type": str,
-            "default": " ",
-            "help": "Phone delimiter of the lexicon file (default: ' ')"
-        },
-        {
-            "name": "--word-index1",
-            "nargs": "?",
-            "type": int,
-            "default": 0,
-            "help": "Field index of the word in the first lexicon file (default: 0)"
-        },
-        {
-            "name": "--phones-index1",
-            "nargs": "?",
-            "type": int,
-            "default": 1,
-            "help": "Field index of the phones in the first lexicon file (default: 1)"
-        },
-        {
-            "name": "--word-index2",
-            "nargs": "?",
-            "type": int,
-            "default": 0,
-            "help": "Field index of the word in the second lexicon file (default: 0)"
-        },
-        {
-            "name": "--phones-index2",
-            "nargs": "?",
-            "type": int,
-            "default": 1,
-            "help": "Field index of the phones in the second lexicon file (default: 1)"
+            "default": None,
+            "help": "Write output to file"
         },
         {
             "name": "--quiet",
@@ -102,63 +59,73 @@ class LexDiffer(CommandLineTool):
             "action": "store_true",
             "help": "Do not color output"
         },
+        {
+            "name": "--diff-only",
+            "action": "store_true",
+            "help": "Do not output common lines"
+        },
+        {
+            "name": "--no-sort",
+            "action": "store_true",
+            "help": "Do not sort the results"
+        },
     ]
 
     def actual_command(self):
         # get options
         lexicon1_file_path = self.vargs["lexicon1"]
         lexicon2_file_path = self.vargs["lexicon2"]
+        output_file_path = self.vargs["output_file"]
+        sort_results = not self.vargs["no_sort"]
         quiet = self.vargs["quiet"]
         print_stats = self.vargs["stats"] 
-        comment = self.vargs["comment"]
-        delimiter = self.vargs["delimiter"]
-        phones_delimiter = self.vargs["phones_delimiter"]
-        word_index1 = self.vargs["word_index1"]
-        phones_index1 = self.vargs["phones_index1"]
-        word_index2 = self.vargs["word_index2"]
-        phones_index2 = self.vargs["phones_index2"]
         color = not self.vargs["no_color"]
+        diff_only = self.vargs["diff_only"]
 
         lexicon1 = SequenceLexicon()
-        lexicon1.read_file(
-            lexicon_file_path=lexicon1_file_path,
-            comment=comment,
-            delimiter=delimiter,
-            phones_delimiter=phones_delimiter,
-            word_index=word_index1,
-            phones_index=phones_index1
-        )
+        lexicon1.read_file(lexicon_file_path=lexicon1_file_path)
 
         lexicon2 = SequenceLexicon()
-        lexicon2.read_file(
-            lexicon_file_path=lexicon2_file_path,
-            comment=comment,
-            delimiter=delimiter,
-            phones_delimiter=phones_delimiter,
-            word_index=word_index2,
-            phones_index=phones_index2
-        )
+        lexicon2.read_file(lexicon_file_path=lexicon2_file_path)
 
-        res = Comparator(lexicon1, lexicon2).compare()
+        comparator = Comparator(lexicon1, lexicon2)
+        result = comparator.compare()
 
-        if not quiet:
-            c = res["comparisons"]
-            for k in c:
-                if not c[k].equal:
-                    print("%s\t%s" % (k, c[k].pretty_print(color=color)))
+        if (output_file_path is not None) or (not quiet):
+            comparisons = list(result["comparisons"].values())
+            if diff_only:
+                comparisons = [c for c in comparisons if not c.equal]
+            if output_file_path is not None:
+                formatted_data = []
+                for c in comparisons:
+                    formatted_data.append(u"%s\t%s" % (c.word, c.pretty_print(color=False)))
+                if sort_results:
+                    formatted_data = sorted(formatted_data)
+                write_file(formatted_data, output_file_path)
+            if not quiet:
+                formatted_data = []
+                for c in comparisons:
+                    formatted_data.append(u"%s\t%s" % (c.word, c.pretty_print(color=color)))
+                if sort_results:
+                    formatted_data = sorted(formatted_data)
+                for f in formatted_data:
+                    print(f)
 
         if print_stats:
-            print(u"Entries in lexicon 1: %d" % res[u"size_lexicon1"])
-            print(u"Entries in lexicon 2: %d" % res[u"size_lexicon2"])
-            print(u"Entries in common:    %d" % res[u"size_common"])
-            print(u"Correct sequences:    %d (%.3f%%)" % (res[u"seq_correct"], 100 * res[u"seq_correct"] / res[u"size_common"]))
-            print(u"Incorrect sequences:  %d (%.3f%%)" % (res[u"seq_incorrect"], 100 * res[u"seq_incorrect"] / res[u"size_common"]))
-            print(u"Correct phones:       %d (%.3f%%)" % (res[u"phones_correct"], 100 * res[u"phones_correct"] / res[u"phones1"]))
-            print(u"Incorrect phones:     %d (%.3f%%)" % (res[u"phones_incorrect"], 100 * res[u"phones_incorrect"] / res[u"phones1"]))
-            print(u"Phone matches:        %d (%.3f%%)" % (res[u"phones_matches"], 100 * res[u"phones_matches"] / res[u"phones1"]))
-            print(u"Phone edits:          %d (%.3f%%)" % (res[u"phones_edits"], 100 * res[u"phones_edits"] / res[u"phones1"]))
-            print(u"Phone additions:      %d (%.3f%%)" % (res[u"phones_additions"], 100 * res[u"phones_additions"] / res[u"phones1"]))
-            print(u"Phone deletions:      %d (%.3f%%)" % (res[u"phones_deletions"], 100 * res[u"phones_deletions"] / res[u"phones1"]))
+            print(u"")
+            print(u"Entries in lexicon 1:  %d" % result[u"size_lexicon1"])
+            print(u"Entries in lexicon 2:  %d" % result[u"size_lexicon2"])
+            print(u"")
+            print(u"Entries in common:     %d" % result[u"size_common"])
+            print(u"  Correct sequences:   %d (%.3f%%)" % (result[u"seq_correct"], 100 * result[u"seq_correct"] / result[u"size_common"]))
+            print(u"  Incorrect sequences: %d (%.3f%%)" % (result[u"seq_incorrect"], 100 * result[u"seq_incorrect"] / result[u"size_common"]))
+            print(u"  Correct phones:      %d (%.3f%%)" % (result[u"phones_correct"], 100 * result[u"phones_correct"] / result[u"phones1"]))
+            print(u"  Incorrect phones:    %d (%.3f%%)" % (result[u"phones_incorrect"], 100 * result[u"phones_incorrect"] / result[u"phones1"]))
+            #print(u"    Matches:           %d (%.3f%%)" % (result[u"phones_matches"], 100 * result[u"phones_matches"] / result[u"phones1"]))
+            print(u"    Edits:             %d (%.3f%%)" % (result[u"phones_edits"], 100 * result[u"phones_edits"] / result[u"phones1"]))
+            print(u"    Additions:         %d (%.3f%%)" % (result[u"phones_additions"], 100 * result[u"phones_additions"] / result[u"phones1"]))
+            print(u"    Deletions:         %d (%.3f%%)" % (result[u"phones_deletions"], 100 * result[u"phones_deletions"] / result[u"phones1"]))
+            print(u"")
 
 
 

@@ -18,9 +18,6 @@ from wiktts.lexicon import FILTER_IPA_CHARS
 from wiktts.lexicon import PLACEHOLDERS
 from wiktts.lexicon import MappableLexicon
 from wiktts.trainer.tool import TOOLS
-from wiktts.trainer.tool import ToolPhonetisaurus08a
-from wiktts.trainer.tool import ToolPhonetisaurusMaster
-from wiktts.trainer.tool import ToolSequitur
 
 __author__ = "Alberto Pettarin"
 __copyright__ = "Copyright 2016, Alberto Pettarin (www.albertopettarin.it)"
@@ -29,6 +26,7 @@ __email__ = "alberto@albertopettarin.it"
 
 class Trainer(CommandLineTool):
 
+    AP_PROGRAM = u"wiktts.trainer"
     AP_DESCRIPTION = u"Prepare train/test/symbol files for ML tools."
     AP_ARGUMENTS = [
         {
@@ -36,7 +34,7 @@ class Trainer(CommandLineTool):
             "nargs": None,
             "type": str,
             "default": None,
-            "help": "ML tool [%s]" % u"|".join(TOOLS)
+            "help": "ML tool [%s]" % u"|".join(TOOLS.keys())
         },
         {
             "name": "lexicon",
@@ -109,17 +107,12 @@ class Trainer(CommandLineTool):
             "help": "Size of the train set relative to valid lexicon size (default: 0.9)"
         },
         {
-            "name": "--quiet",
-            "action": "store_true",
-            "help": "Do not print results to stdout"
-        },
-        {
             "name": "--stats",
             "action": "store_true",
             "help": "Print statistics"
         },
         {
-            "name": "--output-script-only",
+            "name": "--script-only",
             "action": "store_true",
             "help": "Only output the Bash script to run the ML tool"
         },
@@ -131,159 +124,177 @@ class Trainer(CommandLineTool):
             "help": "Parameters to configure the Bash script to run the ML tool"
         },
         {
-            "name": "--create-output-dir",
-            "action": "store_true",
-            "help": "Create the output directory if it does not exist"
-        },
-        {
             "name": "--lowercase",
             "action": "store_true",
             "help": "Lowercase all the words"
         },
     ]
 
+    def __init__(
+            self,
+            lexicon=None,
+            tool=None,
+            mapper=None,
+            output_directory_path=None,
+        ):
+        super(Trainer, self).__init__()
+        self.lexicon = lexicon
+        self.tool = tool
+        self.mapper = mapper
+        self.output_directory_path = output_directory_path
+
+    @property
+    def output_directory_path(self):
+        return self.__output_directory_path
+    @output_directory_path.setter
+    def output_directory_path(self, value):
+        if value is not None:
+            if not os.path.isdir(value):
+                self.error("The output directory must exist. (Got: '%s')" % value)
+        self.__output_directory_path = value
+
+    def _create_lexicon(self, lexicon_file_path, comment, delimiter, word_index, ipa_index):
+        self.lexicon = MappableLexicon()
+        self.lexicon.read_file(
+            lexicon_file_path=lexicon_file_path,
+            comment=comment,
+            delimiter=delimiter,
+            word_index=word_index,
+            ipa_index=ipa_index
+        )
+
+    def _create_mapper(self, mapper_name):
+        if mapper_name == u"kirshenbaum":
+            from ipapy.kirshenbaummapper import KirshenbaumMapper
+            mapper = KirshenbaumMapper()
+        elif mapper_name == u"arpabet":
+            from ipapy.arpabetmapper import ARPABETMapper
+            mapper = ARPABETMapper()
+        else:
+            # create default mapper
+            mapper = Mapper()
+            # NOTE sorting by canonical representation ensures consistency of the symbol set
+            #      across different tools (for the same input lexicon)
+            phones = sorted([p.canonical_representation for p in self.lexicon.filtered_phones])
+            for i, p in enumerate(phones):
+                # NOTE the key is a 1-element tuple: (canonical_repr, )
+                mapper[(p,)] = u"%03d" % (i + 1)
+        self.mapper = mapper
+
+    def output_script(self, base, parameters_string):
+        parameters = {
+            "output_dir_path": self.output_directory_path,
+            "base": os.path.basename(base)
+        }
+        for p in parameters_string.split(u","):
+            try:
+                k, v = p.split(u"=")
+                parameters[k] = v
+            except:
+                pass
+        script_file_path = os.path.join(self.output_directory_path, self.tool.SCRIPT_FILE_NAME)
+        contents = self.tool.format_script(parameters=parameters)
+        write_file(contents, script_file_path)
+        return [script_file_path]
+
+    def output_ml_files(self, base):
+        acc = []
+        acc.append(base + u".train")
+        write_file(self.tool.format_train(), acc[-1])
+        acc.append(base + u".train.words")
+        write_file(self.tool.format_words(train=True, test=False), acc[-1]) 
+        acc.append(base + u".train.symbols")
+        write_file(self.tool.format_symbols(train=True, test=False), acc[-1])
+        acc.append(base + u".test")
+        write_file(self.tool.format_test(), acc[-1])
+        acc.append(base + u".test.words")
+        write_file(self.tool.format_words(train=False, test=True), acc[-1]) 
+        acc.append(base + u".test.symbols")
+        write_file(self.tool.format_symbols(train=False, test=True), acc[-1])
+        acc.append(base + u".words")
+        write_file(self.tool.format_words(train=True, test=True, sort=True), acc[-1]) 
+        acc.append(base + u".symbols")
+        write_file(self.tool.format_symbols(train=True, test=True), acc[-1])
+        return acc
+
     def actual_command(self):
-        # get options
-        tool_name = self.vargs["tool"]
+        # options to init the object
+        self.output_directory_path =  self.vargs["outputdir"]
         lexicon_file_path = self.vargs["lexicon"]
-        output_dir_path =  self.vargs["outputdir"]
-        chars = self.vargs["chars"]
-        quiet = self.vargs["quiet"]
-        print_stats = self.vargs["stats"] 
+        tool_name = self.vargs["tool"]
+        mapper_name = self.vargs["mapper"]
         comment = self.vargs["comment"]
         delimiter = self.vargs["delimiter"]
         word_index = self.vargs["word_index"]
         ipa_index = self.vargs["ipa_index"]
-        train_size = self.vargs["train_size_frac"] if self.vargs["train_size_int"] is None else self.vargs["train_size_int"]
-        output_script_only = self.vargs["output_script_only"]
-        script_parameters = self.vargs["script_parameters"]
-        create_output_dir = self.vargs["create_output_dir"]
-        mapper_name = self.vargs["mapper"]
+        
+        # options to filter/format results
         lowercase = self.vargs["lowercase"]
+        chars = self.vargs["chars"]
+        train_size = self.vargs["train_size_frac"] if self.vargs["train_size_int"] is None else self.vargs["train_size_int"]
+        script_only = self.vargs["script_only"]
+        script_parameters = self.vargs["script_parameters"]
+       
+        # options controlling print behavior
+        print_stats = self.vargs["stats"] 
+        created_files = []
 
-        # make sure
+        # checks
+        if not os.path.isfile(lexicon_file_path):
+            self.error(u"The lexicon file must exist. (Got '%s')" % lexicon_file_path)
         if tool_name not in TOOLS:
-            self.error("The available tools are: %s. (Got: '%s')" % (TOOLS, tool_name))
+            self.error(u"The available tools are: %s. (Got: '%s')" % (TOOLS.keys(), tool_name))
+        self.tool = TOOLS[tool_name]
+        base = os.path.join(self.output_directory_path, os.path.basename(lexicon_file_path))
 
-        # make sure output directory exists
-        if not os.path.isdir(output_dir_path):
-            if create_output_dir:
-                os.makedirs(output_dir_path)
-            else:
-                self.error("The output directory does not exist! (Got: '%s') Use '--create-output-dir' to create it. " % output_dir_path)
+        # output Bash script only?
+        if script_only:
+            created_files.extend(self.output_script(base, script_parameters))
+            for f in created_files:
+                self.print_stderr("Created file: %s" % f)
+            return
 
-        # output file names
-        base = os.path.join(output_dir_path, os.path.basename(lexicon_file_path))
-        train_file_path = base + u".train"
-        train_words_file_path = base + u".train.words"
-        train_symbols_file_path = base + u".train.symbols"
-        test_file_path = base + u".test"
-        test_words_file_path = base + u".test.words"
-        test_symbols_file_path = base + u".test.symbols"
-        words_file_path = base + u".words"
-        symbols_file_path = base + u".symbols"
-        script_file_path = None
-        if tool_name == u"phonetisaurus_08a":
-            cls = ToolPhonetisaurus08a
-        elif tool_name == u"phonetisaurus_master":
-            cls = ToolPhonetisaurusMaster
-        else:
-            cls = ToolSequitur
-
-        if not output_script_only:
-            # read lexicon with cleaned IPA strings
-            #print("Building Lexicon...")
-            lexicon = MappableLexicon()
-            lexicon.read_file(
-                lexicon_file_path=lexicon_file_path,
-                comment=comment,
-                delimiter=delimiter,
-                word_index=word_index,
-                ipa_index=ipa_index
-            )
-            if lowercase:
-                #print("Lowercasing...")
-                lexicon.lower()
-            
-            #print("Filtering...")
-            lexicon.filter_ipa_chars(chars)
-           
-            # create and apply mapper
-            #print("Creating mapping...")
-            if mapper_name == u"kirshenbaum":
-                from ipapy.kirshenbaummapper import KirshenbaumMapper
-                mapper = KirshenbaumMapper()
-            elif mapper_name == u"arpabet":
-                from ipapy.arpabetmapper import ARPABETMapper
-                mapper = ARPABETMapper()
-            else:
-                # create default mapper
-                mapper = Mapper()
-                # NOTE sorting by canonical representation ensures consistency of the symbol set
-                #      across different tools (for the same input lexicon)
-                phones = sorted([p.canonical_representation for p in lexicon.filtered_phones])
-                for i, p in enumerate(phones):
-                    # NOTE the key is a 1-element tuple: (canonical_repr, )
-                    mapper[(p,)] = u"%03d" % (i + 1)
-            #print("Mapping...")
-            lexicon.apply_mapper(mapper)
-            
-            # generate train/test/symbol sets
-            #print("Sets...")
-            lexicon.generate_sets(train_size=train_size)
-            
-            # create training, test, and symbol sets
-            #print("Outputting...")
-            tool_formatter = cls(
-                lexicon=lexicon,
-                mapper=mapper
-            )
-            write_file(tool_formatter.format_train(), train_file_path)
-            write_file(tool_formatter.format_words(train=True, test=False), train_words_file_path) 
-            write_file(tool_formatter.format_symbols(train=True, test=False), train_symbols_file_path)
-            write_file(tool_formatter.format_test(), test_file_path)
-            write_file(tool_formatter.format_words(train=False, test=True), test_words_file_path) 
-            write_file(tool_formatter.format_symbols(train=False, test=True), test_symbols_file_path)
-            write_file(tool_formatter.format_words(train=True, test=True, sort=True), words_file_path) 
-            write_file(tool_formatter.format_symbols(train=True, test=True), symbols_file_path)
-            # print statistics if requested
-            if print_stats:
-                total = len(lexicon)
-                print("Words:")
-                print("  Total: %d" % (lexicon.train_size + lexicon.test_size))
-                print("  Train: %d" % lexicon.train_size)
-                print("  Test:  %d" % lexicon.test_size)
-                print("Symbols:")
-                print("  Total: %d" % (lexicon.symbol_set_size))
-                print("  Train: %d" % (lexicon.train_symbol_set_size))
-                print("  Test:  %d" % (lexicon.test_symbol_set_size))
-            if not quiet:
-                print("Created file: %s" % train_file_path)
-                print("Created file: %s" % train_words_file_path)
-                print("Created file: %s" % train_symbols_file_path)
-                print("Created file: %s" % test_file_path)
-                print("Created file: %s" % test_words_file_path)
-                print("Created file: %s" % test_symbols_file_path)
-                print("Created file: %s" % words_file_path)
-                print("Created file: %s" % symbols_file_path)
-
+        # load lexicon
+        self._create_lexicon(lexicon_file_path, comment, delimiter, word_index, ipa_index)
+        if lowercase:
+            self.lexicon.lower()
+        # filter IPA characters
+        self.lexicon.filter_ipa_chars(chars)
+        # create and apply mapper
+        self._create_mapper(mapper_name)
+        self.lexicon.apply_mapper(self.mapper)
+        # generate train/test sets
+        self.lexicon.generate_sets(train_size=train_size)
+        # create tool object
+        self.tool = self.tool(
+            lexicon=self.lexicon,
+            mapper=self.mapper
+        )
+        
+        # output ML files for tool
+        created_files.extend(self.output_ml_files(base))
+        
+        # output stats
+        stats = []
+        stats.append("Words:")
+        stats.append("  Total: %d" % (self.lexicon.train_size + self.lexicon.test_size))
+        stats.append("  Train: %d" % self.lexicon.train_size)
+        stats.append("  Test:  %d" % self.lexicon.test_size)
+        stats.append("Symbols:")
+        stats.append("  Total: %d" % (self.lexicon.symbol_set_size))
+        stats.append("  Train: %d" % (self.lexicon.train_symbol_set_size))
+        stats.append("  Test:  %d" % (self.lexicon.test_symbol_set_size))
+        created_files.append(os.path.join(self.output_directory_path, base + u".trainer_stats"))
+        write_file(stats, created_files[-1])
+        
         # output script
-        parameters = {
-            "output_dir_path": output_dir_path,
-            "base": os.path.basename(base)
-        }
-        for p in script_parameters.split(u","):
-            try:
-                k, v = p.split(u"=")
-                key = u"%s_%s" % (tool, k)
-                parameters[key] = v
-            except:
-                pass
-        contents = cls.format_script(parameters=parameters)
-        script_file_path = os.path.join(output_dir_path, cls.DEFAULT_SCRIPT_NAME)
-        write_file(contents, script_file_path)
-        if not quiet:
-            print("Created file: %s" % script_file_path)
+        created_files.extend(self.output_script(base, script_parameters))
+        
+        # print statistics if requested
+        for f in created_files:
+            self.print_stderr("Created file: %s" % f)
+        if print_stats:
+            self.print_stderr(u"\n".join(stats))
 
 
 

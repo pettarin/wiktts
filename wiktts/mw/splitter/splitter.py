@@ -33,7 +33,8 @@ class Splitter(CommandLineTool):
     MEDIAWIKI_CLOSE = u'</mediawiki>'
     NS_REGEX = re.compile(r"<ns>([0-9]+)<\/ns>")
 
-    AP_DESCRIPTION = u"Split a MediaWiki dump into multiple files or chunks in memory"
+    AP_PROGRAM = u"wiktts.mw.splitter"
+    AP_DESCRIPTION = u"Split a MediaWiki dump into multiple files"
     AP_ARGUMENTS = [
         {
             "name": "dumpfile",
@@ -50,11 +51,11 @@ class Splitter(CommandLineTool):
             "help": "Output files in this directory"
         },
         {
-            "name": "--ns",
+            "name": "--namespaces",
             "nargs": "+",
             "type": int,
             "default": [],
-            "help": "Extract only pages with the specified ns values (default: all)"
+            "help": "Extract only pages with namespace in the specified list (default: all)"
         },
         {
             "name": "--pages-per-chunk",
@@ -78,14 +79,9 @@ class Splitter(CommandLineTool):
             "help": "Number of pages to extract (default: all)"
         },
         {
-            "name": "--stats",
-            "action": "store_true",
-            "help": "Print statistics"
-        },
-        {
             "name": "--head",
             "action": "store_true",
-            "help": "Shortcut for --ns 0 --max-number-pages 1000"
+            "help": "Shortcut for --namespaces 0 --max-number-pages 1000"
         },
         {
             "name": "--count",
@@ -93,9 +89,14 @@ class Splitter(CommandLineTool):
             "help": "Only count the number of pages"
         },
         {
-            "name": "--quiet",
+            "name": "--hide-progress",
             "action": "store_true",
-            "help": "Do not print created file paths to stdout"
+            "help": "Do not print extraction progress messages"
+        },
+        {
+            "name": "--stats",
+            "action": "store_true",
+            "help": "Print statistics"
         },
     ]
 
@@ -103,9 +104,9 @@ class Splitter(CommandLineTool):
             self,
             dump_file_path=None,
             output_directory_path=None,
-            output_file_prefix="",
+            output_file_prefix=u"",
             pages_per_chunk=1000,
-            ns=[],
+            namespaces=[],
             max_number_pages=None
         ):
         super(Splitter, self).__init__()
@@ -113,7 +114,7 @@ class Splitter(CommandLineTool):
         self.output_directory_path = output_directory_path
         self.output_file_prefix = output_file_prefix
         self.pages_per_chunk = pages_per_chunk
-        self.namespaces = ns
+        self.namespaces = namespaces
         self.max_number_pages = max_number_pages
 
     @property
@@ -123,9 +124,9 @@ class Splitter(CommandLineTool):
     def dump_file_path(self, value):
         if value is not None:
             if not os.path.isfile(value):
-                self.error("The dump file must exist. (Got '%s')" % value)
-            if not (value.endswith(".xml") or value.endswith(".xml.bz2")):
-                self.error("The dump file path must end in '.xml' (uncompressed) or '.xml.bz2' (compressed). (Got '%s')" % value)
+                self.error(u"The dump file must exist. (Got '%s')" % value)
+            if not (value.endswith(u".xml") or value.endswith(u".xml.bz2")):
+                self.error(u"The dump file path must end in '.xml' (uncompressed) or '.xml.bz2' (compressed). (Got '%s')" % value)
         self.__dump_file_path = value
 
     @property
@@ -135,7 +136,7 @@ class Splitter(CommandLineTool):
     def output_directory_path(self, value):
         if value is not None:
             if not os.path.isdir(value):
-                self.error("The output directory must exist. (Got: '%s')" % value)
+                self.error(u"The output directory must exist. (Got: '%s')" % value)
         self.__output_directory_path = value
 
     @property
@@ -144,7 +145,7 @@ class Splitter(CommandLineTool):
     @pages_per_chunk.setter
     def pages_per_chunk(self, value):
         if value < 1:
-            self.error("The number of pages per chunk must at least 1. (Got: '%d')" % value)
+            self.error(u"The number of pages per chunk must at least 1. (Got: '%d')" % value)
         self.__pages_per_chunk = value
 
     @property
@@ -155,48 +156,67 @@ class Splitter(CommandLineTool):
         self.__namespaces = set(value)
 
     def actual_command(self):
+        # options to init the object
         self.dump_file_path = self.vargs["dumpfile"]
         self.output_directory_path = self.vargs["output_dir"]
         self.pages_per_chunk = self.vargs["pages_per_chunk"]
         self.output_file_prefix = self.vargs["prefix"]
-        self.namespaces = self.vargs["ns"]
+        self.namespaces = self.vargs["namespaces"]
         self.max_number_pages = self.vargs["max_number_pages"]
-        quiet = self.vargs["quiet"]
-        print_stats = self.vargs["stats"]
+        
+        # options to filter/count pages
+        head = self.vargs["head"]
         count_pages = self.vargs["count"]
-        if self.vargs["head"]:
-            print("Option --head: extracting first 1000 with ns=0")
+
+        # options controlling print behavior
+        show_progress = not self.vargs["hide_progress"]
+        print_stats = self.vargs["stats"]
+
+        if head:
             self.namespaces = [0]
             self.max_number_pages = 1000
+            self.print_stderr(u"Option --head: extracting first 1000 pages with namespaces 0")
         if count_pages:
-            print("Pages total: %s" % self.count_pages())
+            self.print_stderr(u"Pages total: %s" % self.count_pages())
         else:
-            pages_total, pages_ns, files_created = self.split(quiet=quiet)
+            pages_total, pages_ns, files_created = self.split(show_progress=show_progress)
             if print_stats:
-                print("Pages total:    %s" % pages_total)
+                self.print_stderr(u"Pages total:    %s" % pages_total)
                 if len(self.namespaces) > 0:
-                    print("Pages filtered: %s" % pages_ns)
-                print("Files created:  %s" % files_created)
+                    self.print_stderr(u"Pages filtered: %s" % pages_ns)
+                self.print_stderr(u"Files created:  %s" % files_created)
 
     def open(self):
+        """
+        Open the dump file, either compressed or uncompressed,
+        returning a file-like object.
+        """
         if self.dump_file_path is None:
-            raise ValueError("The dump file path has not been set yet")
-        if self.dump_file_path.endswith(".xml.bz2"):
+            raise ValueError(u"The dump file path has not been set yet")
+        if self.dump_file_path.endswith(u".xml.bz2"):
             return bz2.BZ2File(self.dump_file_path, "r")
         return io.open(self.dump_file_path, "rb")
 
     def count_pages(self):
+        """
+        Shortcut to count the number of pages without full parsing.
+        """
         with self.open() as dump_file_obj:
             pages_total = 0
             for line in dump_file_obj:
+                # NOTE: it is "<page>" and not u"<page>"
+                #       because bz2.BZ2File returns byte strings
                 if line.strip() == "<page>":
                     pages_total += 1
         return pages_total
 
-    def split(self, quiet=True):
+    def split(self, show_progress=False):
+        """
+        Split the dump into chunks.
+        """
         if self.output_directory_path is None:
             self.output_directory_path = tempfile.mkdtemp()
-        output_file_name_template = os.path.join(self.output_directory_path, self.output_file_prefix + "%09d.xml")
+        output_file_name_template = os.path.join(self.output_directory_path, self.output_file_prefix + u"%09d.xml")
         pages_total = 0
         pages_ns = 0
         current_chunk_index = 0
@@ -204,12 +224,15 @@ class Splitter(CommandLineTool):
             file_path = output_file_name_template % (mwchunk.index)
             with io.open(file_path, "w", encoding="utf-8") as chunk_file:
                 chunk_file.write(mwchunk.contents)
-            if not quiet:
-                print(file_path)
+            if show_progress:
+                self.print_stderr(file_path)
         return (mwchunk.pages_total, mwchunk.pages_ns, mwchunk.index)
 
     @property
     def mwchunks(self):
+        """
+        A generator to loop through the MWChunk objects in the dump.
+        """
         pages_total = 0
         pages_ns = 0
         in_page = False

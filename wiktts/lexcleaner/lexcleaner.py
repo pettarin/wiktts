@@ -6,7 +6,6 @@ TBW
 """
 
 from __future__ import absolute_import
-from __future__ import division 
 from __future__ import print_function
 import os
 from ipapy.ipastring import IPAString
@@ -26,6 +25,7 @@ __email__ = "alberto@albertopettarin.it"
 
 class LexCleaner(CommandLineTool):
 
+    AP_PROGRAM = u"wiktts.lexcleaner"
     AP_DESCRIPTION = u"Clean and normalize a pronunciation lexicon."
     AP_ARGUMENTS = [
         {
@@ -36,35 +36,21 @@ class LexCleaner(CommandLineTool):
             "help": "Input lexicon file"
         },
         {
-            "name": "--output-file",
-            "nargs": "?",
+            "name": "outputdir",
+            "nargs": None,
             "type": str,
             "default": None,
-            "help": "Write output to file"
+            "help": "Output files in this directory"
         },
         {
-            "name": "--letter-file",
-            "nargs": "?",
-            "type": str,
-            "default": None,
-            "help": "Write list of symbols (in words) to file"
-        },
-        {
-            "name": "--phone-file",
-            "nargs": "?",
-            "type": str,
-            "default": None,
-            "help": "Write list of symbols (in IPA strings) to file"
-        },
-        {
-            "name": "--word-cleaner-file",
+            "name": "--word-cleaner",
             "nargs": "?",
             "type": str,
             "default": None,
             "help": "Apply replacements from the given file to words"
         },
         {
-            "name": "--ipa-cleaner-file",
+            "name": "--ipa-cleaner",
             "nargs": "?",
             "type": str,
             "default": None,
@@ -106,19 +92,14 @@ class LexCleaner(CommandLineTool):
             "help": "Field index of the IPA string (default: 1)"
         },
         {
-            "name": "--no-sort",
+            "name": "--lowercase",
             "action": "store_true",
-            "help": "Do not sort the results"
+            "help": "Lowercase all the words"
         },
         {
-            "name": "--quiet",
+            "name": "--comment-invalid",
             "action": "store_true",
-            "help": "Do not print results to stdout"
-        },
-        {
-            "name": "--stats",
-            "action": "store_true",
-            "help": "Print statistics"
+            "help": "Comment lines containing words with invalid IPA (after cleaning; you might want --no-sort as well)"
         },
         {
             "name": "--all",
@@ -126,42 +107,47 @@ class LexCleaner(CommandLineTool):
             "help": "Print results for all words (with or without valid IPA after cleaning)"
         },
         {
-            "name": "--comment-invalid",
-            "action": "store_true",
-            "help": "Comment lines regarding words with invalid IPA (after cleaning; you might want --no-sort as well)"
-        },
-        {
             "name": "--invalid",
             "action": "store_true",
             "help": "Print results for words with invalid IPA (after cleaning)"
         },
         {
-            "name": "--lowercase",
+            "name": "--no-sort",
             "action": "store_true",
-            "help": "Lowercase all the words"
+            "help": "Do not sort the results"
+        },
+        {
+            "name": "--stats",
+            "action": "store_true",
+            "help": "Print statistics"
+        },
+        {
+            "name": "--stdout",
+            "action": "store_true",
+            "help": "Print results to standard output"
         },
     ]
 
-    def actual_command(self):
-        # get options
-        lexicon_file_path = self.vargs["lexicon"]
-        output_file_path = self.vargs["output_file"]
-        letter_file_path = self.vargs["letter_file"]
-        phone_file_path = self.vargs["phone_file"]
-        word_cleaner_path = self.vargs["word_cleaner_file"]
-        ipa_cleaner_path = self.vargs["ipa_cleaner_file"]
-        quiet = self.vargs["quiet"]
-        print_stats = self.vargs["stats"] 
-        sort_results = not self.vargs["no_sort"]
-        template = self.vargs["format"]
-        comment = self.vargs["comment"]
-        comment_invalid = self.vargs["comment_invalid"]
-        delimiter = self.vargs["delimiter"]
-        word_index = self.vargs["word_index"]
-        ipa_index = self.vargs["ipa_index"]
-        lowercase = self.vargs["lowercase"]
+    def __init__(
+            self,
+            lexicon=None,
+            output_directory_path=None,
+        ):
+        super(LexCleaner, self).__init__()
+        self.lexicon = lexicon
+        self.output_directory_path = output_directory_path
 
-        # load cleaner
+    @property
+    def output_directory_path(self):
+        return self.__output_directory_path
+    @output_directory_path.setter
+    def output_directory_path(self, value):
+        if value is not None:
+            if not os.path.isdir(value):
+                self.error("The output directory must exist. (Got: '%s')" % value)
+        self.__output_directory_path = value
+
+    def _create_lexicon(self, lexicon_file_path, comment, delimiter, word_index, ipa_index, word_cleaner_path, ipa_cleaner_path, lowercase):
         if word_cleaner_path is None:
             word_cleaner = DefaultWordCleaner(lowercase=lowercase)
         else:
@@ -169,14 +155,12 @@ class LexCleaner(CommandLineTool):
         if ipa_cleaner_path is None:
             ipa_cleaner = DefaultIPACleaner()
         else:
-            ipa_cleaner = UniCleaner(ipa_cleaner)
-
-        # read lexicon and clean raw IPA strings
-        lexicon = Lexicon(
+            ipa_cleaner = UniCleaner(ipa_cleaner_path)
+        self.lexicon = Lexicon(
             word_cleaner=word_cleaner,
             ipa_cleaner=ipa_cleaner,
         )
-        lexicon.read_file(
+        self.lexicon.read_file(
             lexicon_file_path=lexicon_file_path,
             comment=comment,
             delimiter=delimiter,
@@ -184,51 +168,88 @@ class LexCleaner(CommandLineTool):
             ipa_index=ipa_index
         )
 
-        # select the data to include in the output 
-        if self.vargs["all"]:
-            lexicon.select_entries(include_valid=True, include_invalid=True)
-        elif self.vargs["invalid"]:
-            lexicon.select_entries(include_valid=False, include_invalid=True)
+    def actual_command(self):
+        # options to init the object
+        self.output_directory_path = self.vargs["outputdir"]
+        lexicon_file_path = self.vargs["lexicon"]
+        word_cleaner_path = self.vargs["word_cleaner"]
+        ipa_cleaner_path = self.vargs["ipa_cleaner"]
+        lowercase = self.vargs["lowercase"]
+        comment = self.vargs["comment"]
+        delimiter = self.vargs["delimiter"]
+        word_index = self.vargs["word_index"]
+        ipa_index = self.vargs["ipa_index"] 
+        
+        # options to filter/format results
+        comment_invalid = self.vargs["comment_invalid"]
+        template = self.vargs["format"]
+        sort_results = not self.vargs["no_sort"]
+        select_all = self.vargs["all"]
+        select_invalid = self.vargs["invalid"]
+       
+        # options controlling print behavior
+        print_stats = self.vargs["stats"]
+        print_stdout = self.vargs["stdout"]
+        created_files = []
+
+        # checks
+        if not os.path.isfile(lexicon_file_path):
+            self.error(u"The lexicon file must exist. (Got '%s')" % lexicon_file_path)
+        if (word_cleaner_path is not None) and (not os.path.isfile(word_cleaner_path)):
+            self.error(u"The word cleaner source file must exist. (Got '%s')" % word_cleaner_path)
+        if (ipa_cleaner_path is not None) and (not os.path.isfile(ipa_cleaner_path)):
+            self.error(u"The ipa cleaner source file must exist. (Got '%s')" % ipa_cleaner_path)
+        base = os.path.basename(lexicon_file_path)
+        
+        # load lexicon
+        self._create_lexicon(lexicon_file_path, comment, delimiter, word_index, ipa_index, word_cleaner_path, ipa_cleaner_path, lowercase)
+        
+        # filter/format data
+        if select_all:
+            self.lexicon.select_entries(include_valid=True, include_invalid=True)
+        elif select_invalid:
+            self.lexicon.select_entries(include_valid=False, include_invalid=True)
         else:
-            lexicon.select_entries(include_valid=True, include_invalid=False)
+            self.lexicon.select_entries(include_valid=True, include_invalid=False)
+        formatted_data = self.lexicon.format_lexicon(
+            template=template,
+            comment_invalid=comment_invalid,
+            comment=comment
+        )
+        # sort if requested
+        if sort_results:
+            formatted_data = sorted(formatted_data)
 
-        # format data if file or stdout output should be produced
-        if (output_file_path is not None) or (not quiet):
-            # format data
-            formatted_data = lexicon.format_lexicon(
-                template=template,
-                comment_invalid=comment_invalid,
-                comment=comment
-            )
-            # sort if requested
-            if sort_results:
-                formatted_data = sorted(formatted_data)
-            # output as requested
-            if output_file_path is not None:
-                write_file(formatted_data, output_file_path)
-            if not quiet:
-                for d in formatted_data:
-                    print(d)
+        # output as requested
+        created_files.append(os.path.join(self.output_directory_path, base + u".clean"))
+        write_file(formatted_data, created_files[-1]) 
 
-        # save letters to file
-        if letter_file_path is not None:
-            write_file(lexicon.format_letters(), letter_file_path)
+        created_files.append(os.path.join(self.output_directory_path, base + u".letters"))
+        write_file(self.lexicon.format_letters(), created_files[-1])
+        
+        created_files.append(os.path.join(self.output_directory_path, base + u".phones"))
+        write_file(self.lexicon.format_phones(), created_files[-1])
 
-        # save phones to file
-        if phone_file_path is not None:
-            write_file(lexicon.format_phones(), phone_file_path)
+        # output stats
+        stats = []
+        stats.append(u"Lexicon path:     %s" % lexicon_file_path)
+        stats.append(u"Output directory: %s" % self.output_directory_path)
+        stats.append(u"Word cleaner:     %s" % word_cleaner_path)
+        stats.append(u"IPA cleaner:      %s" % ipa_cleaner_path)
+        stats.append(self.lexicon.pretty_print_stats())
+        created_files.append(os.path.join(self.output_directory_path, base + u".cleaner_stats"))
+        write_file(stats, created_files[-1])
+
+        # print to stdout if requested 
+        if print_stdout:
+            for d in formatted_data:
+                self.print_stdout(d)
 
         # print statistics if requested
+        for f in created_files:
+            self.print_stderr("Created file: %s" % f)
         if print_stats:
-            total = len(lexi)
-            rv = len(lexi.raw_valid)
-            rv_perc = rv / total * 100
-            cv = len(lexi.cleaned_valid)
-            cv_perc = cv / total * 100
-            print("Words")
-            print("  Total:                     %d" % total)
-            print("  Raw IPA Valid/Invalid:     %d / %d (%0.3f%s / %0.3f%s)" % (rv, total - rv, rv_perc, "%", 100.0 - rv_perc, "%"))
-            print("  Cleaned IPA Valid/Invalid: %d / %d (%0.3f%s / %0.3f%s)" % (cv, total - cv, cv_perc, "%", 100.0 - cv_perc, "%"))
+            self.print_stderr(u"\n".join(stats))
 
 
 
