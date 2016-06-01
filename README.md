@@ -10,8 +10,8 @@ Mining MediaWiki dumps to create better TTS engines (using Machine Learning)
 
 ## VERY IMPORTANT NOTICE
 
-This is work in progress.
-Code, tools, APIs, etc. are subject to change without any further notice.
+**This is work in progress.**
+Code, tools, APIs, etc. are **subject to change without any further notice**.
 Use at your own risk, until v1.0.0 is released (and this notice disappears).
 Current TODO list:
 
@@ -187,9 +187,24 @@ $ bash run_sequitur.sh apply new_words.txt
 **wiktts** is released under the MIT License.
 
 
-## References
+## Citation And References
 
-See the [REFERENCES file](REFERENCES.md).
+If you use **wiktts** for a research project,
+please include a citation in your publication/documentation
+with (at least) the following information:
+
+```
+Alberto Pettarin. wiktts [VERSION_YOU_USE]. https://github.com/pettarin/wiktts (last access: 2016-MM-DD).
+```
+
+For example:
+
+```
+Alberto Pettarin. wiktts v0.0.8. https://github.com/pettarin/wiktts (last access: 2016-06-01).
+```
+
+For a list of resources used to design and implement **wiktts**,
+please consult the [REFERENCES file](REFERENCES.md).
 
 
 ## Acknowledgments
