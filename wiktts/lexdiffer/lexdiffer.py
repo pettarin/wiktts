@@ -6,8 +6,10 @@ TBW
 """
 
 from __future__ import absolute_import
-from __future__ import division 
 from __future__ import print_function
+import os
+
+from ipapy.ipastring import IPAString
 
 from wiktts import write_file
 from wiktts.commandlinetool import CommandLineTool
@@ -21,6 +23,7 @@ __email__ = "alberto@albertopettarin.it"
 
 class LexDiffer(CommandLineTool):
 
+    AP_PROGRAM = u"wiktts.lexdiffer"
     AP_DESCRIPTION = u"Compare pronunciation lexica."
     AP_ARGUMENTS = [
         {
@@ -28,31 +31,19 @@ class LexDiffer(CommandLineTool):
             "nargs": None,
             "type": str,
             "default": None,
-            "help": "First lexicon"
+            "help": "First lexicon file"
         },
         {
             "name": "lexicon2",
             "nargs": None,
             "type": str,
             "default": None,
-            "help": "First lexicon"
+            "help": "Second lexicon file (reference)"
         },
         {
-            "name": "--output-file",
-            "nargs": "?",
-            "type": str,
-            "default": None,
-            "help": "Write output to file"
-        },
-        {
-            "name": "--quiet",
+            "name": "--ipa",
             "action": "store_true",
-            "help": "Do not print results to stdout"
-        },
-        {
-            "name": "--stats",
-            "action": "store_true",
-            "help": "Print statistics"
+            "help": "The input lexica contain IPA strings (not mapped)"
         },
         {
             "name": "--no-color",
@@ -69,67 +60,107 @@ class LexDiffer(CommandLineTool):
             "action": "store_true",
             "help": "Do not sort the results"
         },
+        {
+            "name": "--stats",
+            "action": "store_true",
+            "help": "Print statistics"
+        },
+        {
+            "name": "--stdout",
+            "action": "store_true",
+            "help": "Print results to standard output"
+        },
     ]
+
+    def __init__(
+            self,
+            lexicon1=None,
+            lexicon2=None,
+        ):
+        super(LexDiffer, self).__init__()
+        self.lexicon1 = lexicon1
+        self.lexicon2 = lexicon2
+        self.comparator = None
+
+    def _create_lexica(self, lexicon1_file_path, lexicon2_file_path, ipa):
+        def field_to_ipa(string):
+            return IPAString(unicode_string=string).ipa_chars
+
+        self.lexicon1 = SequenceLexicon()
+        self.lexicon2 = SequenceLexicon()
+        if ipa:
+            self.lexicon1.read_file(
+                lexicon_file_path=lexicon1_file_path,
+                field_to_sequence_function=field_to_ipa
+            )
+            self.lexicon2.read_file(
+                lexicon_file_path=lexicon2_file_path,
+                field_to_sequence_function=field_to_ipa
+            )
+        else:
+            self.lexicon1.read_file(lexicon_file_path=lexicon1_file_path)
+            self.lexicon2.read_file(lexicon_file_path=lexicon2_file_path)
+        self.comparator = Comparator(self.lexicon1, self.lexicon2)
 
     def actual_command(self):
         # get options
         lexicon1_file_path = self.vargs["lexicon1"]
         lexicon2_file_path = self.vargs["lexicon2"]
-        output_file_path = self.vargs["output_file"]
-        sort_results = not self.vargs["no_sort"]
-        quiet = self.vargs["quiet"]
-        print_stats = self.vargs["stats"] 
-        color = not self.vargs["no_color"]
+        
+        # options to filter/format results
+        ipa = self.vargs["ipa"]
         diff_only = self.vargs["diff_only"]
+        sort = not self.vargs["no_sort"]
+        color = not self.vargs["no_color"]
 
-        lexicon1 = SequenceLexicon()
-        lexicon1.read_file(lexicon_file_path=lexicon1_file_path)
+        # options controlling print behavior
+        print_stats = self.vargs["stats"]
+        print_stdout = self.vargs["stdout"]
+        created_files = []
 
-        lexicon2 = SequenceLexicon()
-        lexicon2.read_file(lexicon_file_path=lexicon2_file_path)
+        # checks
+        if not os.path.isfile(lexicon1_file_path):
+            self.error(u"The first lexicon file must exist. (Got '%s')" % lexicon1_file_path)
+        if not os.path.isfile(lexicon2_file_path):
+            self.error(u"The second lexicon file must exist. (Got '%s')" % lexicon2_file_path)
 
-        comparator = Comparator(lexicon1, lexicon2)
-        result = comparator.compare()
+        # load lexica and compare
+        self._create_lexica(lexicon1_file_path, lexicon2_file_path, ipa)
+        self.comparator.compare()
 
-        if (output_file_path is not None) or (not quiet):
-            comparisons = list(result["comparisons"].values())
-            if diff_only:
-                comparisons = [c for c in comparisons if not c.equal]
-            if output_file_path is not None:
-                formatted_data = []
-                for c in comparisons:
-                    formatted_data.append(u"%s\t%s" % (c.word, c.pretty_print(color=False)))
-                if sort_results:
-                    formatted_data = sorted(formatted_data)
-                write_file(formatted_data, output_file_path)
-            if not quiet:
-                formatted_data = []
-                for c in comparisons:
-                    formatted_data.append(u"%s\t%s" % (c.word, c.pretty_print(color=color)))
-                if sort_results:
-                    formatted_data = sorted(formatted_data)
-                for f in formatted_data:
-                    print(f)
+        # save to plain text file
+        formatted_data = self.comparator.pretty_print(diff_only=diff_only, sort=sort, fmt=u"plain", color=False)
+        created_files.append(lexicon1_file_path + u".diff")
+        write_file(formatted_data, created_files[-1])
 
+        # save to HTML file
+        formatted_data = self.comparator.pretty_print(diff_only=diff_only, sort=sort, fmt=u"html", color=True)
+        created_files.append(lexicon1_file_path + u".diff.html")
+        write_file(formatted_data, created_files[-1])
+
+        # print to stdout if requested 
+        if print_stdout:
+            formatted_data = self.comparator.pretty_print(diff_only=diff_only, sort=sort, fmt=u"plain", color=color)
+            for d in formatted_data:
+                self.print_stdout(d)
+
+        # output stats
+        stats = []
+        stats.append(u"Lexicon 1 path:        %s" % lexicon1_file_path)
+        stats.append(u"Lexicon 2 path:        %s" % lexicon2_file_path)
+        stats.append(u"Diff only:             %s" % diff_only)
+        stats.append(u"Sort:                  %s" % sort)
+        stats.append(u"Color:                 %s" % color)
+        stats.append(u"")
+        stats.append(self.comparator.pretty_print_stats())
+        created_files.append(lexicon1_file_path + u".diff_stats")
+        write_file(stats, created_files[-1])
+
+        # print statistics if requested
+        for f in created_files:
+            self.print_stderr("Created file: %s" % f)
         if print_stats:
-            print(u"")
-            print(u"Entries in lexicon 1:  %d" % result[u"size_lexicon1"])
-            print(u"Entries in lexicon 2:  %d" % result[u"size_lexicon2"])
-            print(u"")
-            print(u"Entries in common:     %d" % result[u"size_common"])
-            print(u"  Correct sequences:   %d (%.3f%%)" % (result[u"seq_correct"], 100 * result[u"seq_correct"] / result[u"size_common"]))
-            print(u"  Incorrect sequences: %d (%.3f%%)" % (result[u"seq_incorrect"], 100 * result[u"seq_incorrect"] / result[u"size_common"]))
-            print(u"  Correct phones:      %d (%.3f%%)" % (result[u"phones_correct"], 100 * result[u"phones_correct"] / result[u"phones1"]))
-            print(u"  Incorrect phones:    %d (%.3f%%)" % (result[u"phones_incorrect"], 100 * result[u"phones_incorrect"] / result[u"phones1"]))
-            #print(u"    Matches:           %d (%.3f%%)" % (result[u"phones_matches"], 100 * result[u"phones_matches"] / result[u"phones1"]))
-            print(u"    Edits:             %d (%.3f%%)" % (result[u"phones_edits"], 100 * result[u"phones_edits"] / result[u"phones1"]))
-            print(u"    Additions:         %d (%.3f%%)" % (result[u"phones_additions"], 100 * result[u"phones_additions"] / result[u"phones1"]))
-            print(u"    Deletions:         %d (%.3f%%)" % (result[u"phones_deletions"], 100 * result[u"phones_deletions"] / result[u"phones1"]))
-            print(u"")
-
-
-
-
+            self.print_stderr(u"\n".join(stats))
 
 
 

@@ -28,6 +28,11 @@ class SequenceLexiconEntry(object):
 
 
 
+def default_split(string):
+    return string.split(u" ")
+
+
+
 class SequenceLexicon(object):
     """
     TBW
@@ -53,7 +58,7 @@ class SequenceLexicon(object):
 
     @property
     def words(self):
-        return set([e.word for e in self.entries])
+        return [e.word for e in self.entries]
 
     def entries_for_word(self, word):
         try:
@@ -61,12 +66,11 @@ class SequenceLexicon(object):
         except KeyError:
             return []
 
-    def read_file(self, lexicon_file_path, comment=u"#", delimiter=u"\t", phones_delimiter=u" ", word_index=0, phones_index=1):
+    def read_file(self, lexicon_file_path, field_to_sequence_function=default_split, comment=u"#", delimiter=u"\t", word_index=0, phones_index=1):
         if (lexicon_file_path is None) or (not os.path.isfile(lexicon_file_path)):
             raise ValueError("The lexicon file path must exist. (Got '%s')" % lexicon_file_path)
         comment = to_unicode_string(comment)
         delimiter = to_unicode_string(delimiter)
-        phones_delimiter = to_unicode_string(phones_delimiter)
         with io.open(lexicon_file_path, "r", encoding="utf-8") as lexicon_file:
             for line in lexicon_file:
                 line = line.strip()
@@ -74,8 +78,9 @@ class SequenceLexicon(object):
                     acc = line.split(delimiter)
                     self.entries.append(SequenceLexiconEntry(
                         word=acc[word_index],
-                        phones=acc[phones_index].split(phones_delimiter),
+                        phones=field_to_sequence_function(acc[phones_index])
                     ))
         self._update()
+
 
 

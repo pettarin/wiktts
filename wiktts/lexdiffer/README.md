@@ -1,4 +1,4 @@
-# lexdiffer 
+# wiktts.lexdiffer 
 
 Compare pronunciation lexica
 
@@ -8,26 +8,26 @@ Compare pronunciation lexica
 Two UTF-8 encoded text files,
 containing two pronunciation lexica.
 
-Each line should contain at least two fields,
+Each line should contain two fields,
 the word and a list of phones,
-separated by a field separator character.
-Each line might contain additional fields.
+separated by a tab character (``U+0009 TAB``).
 
-Phones can be represented by (Unicode) IPA characters
-or they can be arbitrarily mapped.
+Phones are assumed to be mapped into arbitrary symbols,
+separated by spaces.
 
-By default:
-* lines beginning with ``#`` (``U+0023 NUMBER SIGN``) are ignored;
-* the field separator is the tab character (``U+0009 TAB``); and
-* the word and the list of phonemes fields are the first and second fields of each line.
-
-You can change these defaults with the ``--comment``, ``--delimiter``, and
-``--word-index``/``--phonemes-index`` parameters.
+Alternatively, if you specify the ``--ipa`` switch,
+the phone sequence is represented by a (clean) IPAString,
+output into Unicode in its canonical form.
+(Use ``wiktts.lexcleaner`` to obtain such a representation.)
 
 
 ## Output
 
-TBW
+Three files:
+
+* a ``.diff`` file, containing the diff from lexicon1 to lexicon2 in plain text format;
+* a ``.diff.html`` file, containing the diff in HTML format;
+* a ``.diff_stats`` file, containing the diff statistics.
 
 
 ## Usage
@@ -52,7 +52,24 @@ Invoke with ``--help`` to get the list of available options:
 ```bash
 $ python -m wiktts.lexdiffer --help
 
-TBW
+usage: wiktts.lexdiffer [-h] [--ipa] [--no-color] [--diff-only] [--no-sort]
+                        [--stats] [--stdout]
+                        lexicon1 lexicon2
+
+Compare pronunciation lexica.
+
+positional arguments:
+  lexicon1     First lexicon file
+  lexicon2     Second lexicon file (reference)
+
+optional arguments:
+  -h, --help   show this help message and exit
+  --ipa        The input lexica contain IPA strings (not mapped)
+  --no-color   Do not color output
+  --diff-only  Do not output common lines
+  --no-sort    Do not sort the results
+  --stats      Print statistics
+  --stdout     Print results to standard output
 ```
 
 ## Examples
