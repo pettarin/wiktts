@@ -33,6 +33,18 @@ class Tool(object):
     def format_test(self):
         return self._format_g2p_input(self.lexicon.test)
 
+    def format_tab(self, train=False, test=True, sort=False):
+        def format_entries(entries):
+            return [u"%s\t%s" % (e.cleaned_word_unicode, u" ".join(e.filtered_mapped_unicode)) for e in entries]
+        acc = []
+        if train:
+            acc.extend(format_entries(self.lexicon.train))
+        if test:
+            acc.extend(format_entries(self.lexicon.test))
+        if sort:
+            return sorted(acc)
+        return acc
+
     def format_words(self, train=False, test=True, sort=False):
         def format_list(where):
             return [e.cleaned_word_unicode for e in where]
@@ -124,7 +136,7 @@ class ToolPhonetisaurusMaster(Tool):
             cls.TEMPLATES_DIRECTORY_PATH,
             cls.COMPUTE_ER
         )
-        dest_path = os.path.join(d["output_dir_path"], cls.COMPUTE_ER)
+        dest_path = os.path.abspath(os.path.join(d["output_dir_path"], cls.COMPUTE_ER))
         shutil.copyfile(src_path, dest_path)
         return template.format(
             BASE=d["base"],
