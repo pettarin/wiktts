@@ -28,43 +28,43 @@ class Tool(object):
         raise NotImplementedError(u"You must use a concrete subclass of Tool")
 
     def format_train(self):
-        return self._format_g2p_input(self.lexicon.train)
+        return self._format_g2p_input(self.lexicon.train_lexicon)
 
     def format_test(self):
-        return self._format_g2p_input(self.lexicon.test)
+        return self._format_g2p_input(self.lexicon.test_lexicon)
 
     def format_tab(self, train=False, test=True, sort=False):
         def format_entries(entries):
-            return [u"%s\t%s" % (e.cleaned_word_unicode, u" ".join(e.filtered_mapped_unicode)) for e in entries]
+            return [u"%s\t%s" % (e.filtered.word_unicode, u" ".join(e.value)) for e in entries]
         acc = []
         if train:
-            acc.extend(format_entries(self.lexicon.train))
+            acc.extend(format_entries(self.lexicon.train_lexicon))
         if test:
-            acc.extend(format_entries(self.lexicon.test))
+            acc.extend(format_entries(self.lexicon.test_lexicon))
         if sort:
             return sorted(acc)
         return acc
 
     def format_words(self, train=False, test=True, sort=False):
-        def format_list(where):
-            return [e.cleaned_word_unicode for e in where]
+        def format_list(entries):
+            return [e.filtered.word_unicode for e in entries]
         acc = []
         if train:
-            acc.extend(format_list(self.lexicon.train))
+            acc.extend(format_list(self.lexicon.train_lexicon))
         if test:
-            acc.extend(format_list(self.lexicon.test))
+            acc.extend(format_list(self.lexicon.test_lexicon))
         if sort:
             return sorted(acc)
         return acc
 
     def format_symbols(self, train=False, test=True, sort=True):
-        def format_set(where):
-            return set([u"%s\t%s\t%s" % (self.mapper[(p.canonical_representation,)], p.name, p.unicode_repr) for p in where])
+        def format_set(phones):
+            return set([u"%s\t%s\t(%s)" % (self.mapper[(p.canonical_representation,)], p.name, p.unicode_repr) for p in phones])
         acc = set()
         if train:
-            acc |= format_set(self.lexicon.train_symbol_set)
+            acc |= format_set(self.lexicon.train_lexicon.phones)
         if test:
-            acc |= format_set(self.lexicon.test_symbol_set)
+            acc |= format_set(self.lexicon.test_lexicon.phones)
         acc = list(acc)
         if sort:
             return sorted(acc)
@@ -124,7 +124,7 @@ class ToolPhonetisaurusMaster(Tool):
     }
 
     def _format_g2p_input(self, entries):
-        return [u"%s\t%s" % (e.cleaned_word_unicode, u" ".join(e.filtered_mapped_unicode)) for e in entries]
+        return [u"%s\t%s" % (e.filtered.word_unicode, u" ".join(e.value)) for e in entries]
 
     @classmethod
     def _format_script_contents(cls, template, d):
@@ -164,7 +164,7 @@ class ToolPhonetisaurus08a(Tool):
     }
 
     def _format_g2p_input(self, entries):
-        return [u"%s\t%s" % (e.cleaned_word_unicode, u" ".join(e.filtered_mapped_unicode)) for e in entries]
+        return [u"%s\t%s" % (e.filtered.word_unicode, u" ".join(e.value)) for e in entries]
 
     @classmethod
     def _format_script_contents(cls, template, d):
@@ -194,7 +194,7 @@ class ToolSequitur(Tool):
     def _format_g2p_input(self, entries):
         # NOTE sequitur does not allow spaces in word or phoneme symbol!
         # TODO warn the user
-        return [u"%s %s" % (e.cleaned_word_unicode.replace(u" ", u""), u" ".join(e.filtered_mapped_unicode)) for e in entries]
+        return [u"%s %s" % (e.filtered.word_unicode.replace(u" ", u""), u" ".join(e.value)) for e in entries]
 
     @classmethod
     def _format_script_contents(cls, template, d):

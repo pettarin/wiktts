@@ -15,21 +15,21 @@ Each line might contain additional fields.
 By default:
 * lines beginning with ``#`` (``U+0023 NUMBER SIGN``) are ignored;
 * the field separator is the tab character (``U+0009 TAB``); and
-* the word and IPA fields are the first and second fields of each line.
+* the word and pronunciation fields are the first and second fields of each line.
 
 You can change these defaults with the ``--comment``, ``--delimiter``, and
-``--word-index``/``--ipa-index`` parameters.
+``--word-index``/``--pron-index`` parameters.
 
 
 ## Output
 
 Four files will be created in the specified output directory:
 
-* a ``.clean`` **new pronunciation lexicon file** where the word and IPA strings
-  has been **cleaned** and **normalized**;
+* a ``.clean`` **new pronunciation lexicon file** where the word and pronunciation strings
+  have been **cleaned** and **normalized**;
 * a ``.letters`` file listing all the characters appearing in the words of the lexicon;
-* a ``.phones`` file listing all the phones appearing in the IPA strings of the lexicon; and
-* a ``.stats`` file, containing the statistics of the cleaning process.
+* a ``.phones`` file listing all the phones appearing in the pronunciation strings of the lexicon; and
+* a ``.cleaner_stats`` file, containing the statistics of the cleaning process.
 
 **Cleaned** means that Unicode characters commonly used in MediaWiki but not IPA valid
 have been translated to the corresponding valid IPA character.
@@ -50,9 +50,6 @@ the pair (word, cleaned IPA) is discarded.
 You can change this behavior using the ``--all`` and ``--comment-invalid`` parameters.
 You can invert this behavior, that is, printing only the words with invalid IPA,
 using the ``--invalid`` parameter.
-If you override the default, the resulting IPA string will contain
-all recognized IPA characters,
-while characters that are not IPA valid will be ignored.
 
 
 ## Usage
@@ -77,12 +74,14 @@ Invoke with ``--help`` to get the list of available options:
 ```bash
 $ python -m wiktts.lexcleaner --help
 
-usage: wiktts.lexcleaner [-h] [--word-cleaner [WORD_CLEANER]]
-                         [--ipa-cleaner [IPA_CLEANER]] [--format [FORMAT]]
+usage: wiktts.lexcleaner [-h] [--chars [CHARS]]
+                         [--word-cleaner [WORD_CLEANER]]
+                         [--pron-cleaner [PRON_CLEANER]] [--format [FORMAT]]
                          [--comment [COMMENT]] [--delimiter [DELIMITER]]
-                         [--word-index [WORD_INDEX]] [--ipa-index [IPA_INDEX]]
-                         [--lowercase] [--comment-invalid] [--all] [--invalid]
-                         [--no-sort] [--stats] [--stdout]
+                         [--word-index [WORD_INDEX]]
+                         [--pron-index [PRON_INDEX]] [--lowercase]
+                         [--comment-invalid] [--all] [--invalid] [--no-sort]
+                         [--stats] [--stdout]
                          lexicon outputdir
 
 Clean and normalize a pronunciation lexicon.
@@ -93,36 +92,39 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
+  --chars [CHARS]       Map only the specified IPA characters
+                        [all|letters|cvp|cvs|cvpl|cvsl|cvslw|cvslws] (default:
+                        'all')
   --word-cleaner [WORD_CLEANER]
                         Apply replacements from the given file to words
-  --ipa-cleaner [IPA_CLEANER]
-                        Apply replacements from the given file to IPA strings
+  --pron-cleaner [PRON_CLEANER]
+                        Apply replacements from the given file to
+                        pronunciation strings
   --format [FORMAT]     Format output according to this template (available
-                        placeholders: {RWORDUNI}, {RIPAUNI}, {RIPAUNIVALID},
-                        {RIPA}, {RCV}, {RCVP}, {RCVS}, {RCVPL}, {RCVSL},
-                        {RCVSLW}, {RCVSLWS}, {CWORDUNI}, {CIPAUNI},
-                        {CIPAUNIVALID}, {CIPA}, {CCV}, {CCVP}, {CCVS},
-                        {CCVPL}, {CCVSL}, {CCVSLW}, {CCVSLWS}, {CFIL},
-                        {CFILMAPPED})
+                        placeholders: {WORDUNI}, {PRONUNI}, {PRONUNIVALID},
+                        {IPA}, {CWORDUNI}, {CPRONUNI}, {CPRONUNIVALID},
+                        {CIPA}, {FIPA})
   --comment [COMMENT]   Ignore lines in the lexicon file starting with this
                         string (default: '#')
   --delimiter [DELIMITER]
                         Field delimiter of the lexicon file (default: '\t')
   --word-index [WORD_INDEX]
                         Field index of the word (default: 0)
-  --ipa-index [IPA_INDEX]
-                        Field index of the IPA string (default: 1)
+  --pron-index [PRON_INDEX]
+                        Field index of the pronunciation (default: 1)
   --lowercase           Lowercase all the words
-  --comment-invalid     Comment lines containing words with invalid IPA (after
-                        cleaning; you might want --no-sort as well)
+  --comment-invalid     Comment lines containing words with invalid IPA
+                        pronunciation (after cleaning; you might want --no-
+                        sort as well)
   --all                 Print results for all words (with or without valid IPA
-                        after cleaning)
-  --invalid             Print results for words with invalid IPA (after
-                        cleaning)
+                        pronunciation after cleaning)
+  --invalid             Print results for words with invalid IPA pronunciation
+                        (after cleaning)
   --no-sort             Do not sort the results
   --stats               Print statistics
   --stdout              Print results to standard output
 ```
+
 
 ## Example
 
@@ -429,17 +431,23 @@ z	voiced alveolar sibilant-fricative consonant (U+007A)
 ‿	linking suprasegmental (U+203F)
     ```
 
-4. ``/tmp/enwiktionary-20160407.lex.lexcleaner_stats``:
+4. ``/tmp/enwiktionary-20160407.lex.cleaner_stats``:
     ```
-Lexicon path:     enwiktionary-20160407.lex
-Output directory: /tmp/
-Word cleaner:     None
-IPA cleaner:      None
+Lexicon path:          enwiktionary-20160407.lex
+Output directory:      /tmp/
+Word cleaner:          None
+Pronunciation cleaner: None
+Lowercase word:        False
+Sort words:            True
+Include valid:         True
+Include invalid:       False
 Words
   Total:           36967
-  Valid   Raw:     33871 (91.625%)
-  Invalid Raw:     3096 (8.375%)
-  Valid   Cleaned: 36954 (99.965%)
-  Invalid Cleaned: 13 (0.035%)
+  Raw Valid:       33871 (91.625%)
+  Raw Invalid:     3096 (8.375%)
+  Cleaned Valid:   36952 (99.959%)
+  Cleaned Invalid: 15 (0.041%)
     ```
+
+
 

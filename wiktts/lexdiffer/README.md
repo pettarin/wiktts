@@ -14,11 +14,10 @@ separated by a tab character (``U+0009 TAB``).
 
 Phones are assumed to be mapped into arbitrary symbols,
 separated by spaces.
-
 Alternatively, if you specify the ``--ipa`` switch,
-the phone sequence is represented by a (clean) IPAString,
-output into Unicode in its canonical form.
-(Use ``wiktts.lexcleaner`` to obtain such a representation.)
+the phone sequence must be represented by a (clean) IPAString
+in its canonical form output as UTF-8 encoded Unicode string.
+(Such a representation is output e.g. by ``wiktts.lexcleaner``.)
 
 
 ## Output
@@ -39,7 +38,8 @@ $ python -m wiktts.lexdiffer LEXICON1 LEXICON2 [OPTIONS]
 Example:
 
 ```bash
-$ python -m wiktts.lexdiffer enwiktionary-20160407.lex.clean enwiktionary-20160407.lex.clean.words.applied
+$ python -m wiktts.lexdiffer enwiktionary-20160407.lex.clean.tab enwiktionary-20160407.lex.clean.words.applied
+$ python -m wiktts.lexdiffer enwiktionary-20160407.lex.clean another.lex.clean --ipa 
 ```
 
 Processing big lexicon files (>100k words) might take a couple of minutes.

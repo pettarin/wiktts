@@ -14,15 +14,19 @@ from ipapy.mapper import Mapper
 
 from wiktts import write_file
 from wiktts.commandlinetool import CommandLineTool
-from wiktts.lexicon import FILTER_IPA_CHARS
-from wiktts.lexicon import PLACEHOLDERS
-from wiktts.lexicon import MappableLexicon
+from wiktts.mappedpronunciationlexicon import MappedPronunciationLexicon
 from wiktts.trainer.tool import TOOLS
 
 __author__ = "Alberto Pettarin"
 __copyright__ = "Copyright 2016, Alberto Pettarin (www.albertopettarin.it)"
 __license__ = "MIT"
 __email__ = "alberto@albertopettarin.it"
+
+MAPPERS = [
+    u"arpabet",
+    u"auto",
+    u"kirshenbaum"
+]
 
 class Trainer(CommandLineTool):
 
@@ -54,15 +58,15 @@ class Trainer(CommandLineTool):
             "name": "--chars",
             "nargs": "?",
             "type": str,
-            "default": u"cv",
-            "help": "Output the IPA characters of specified type [%s] (default: 'cv')" % u"|".join(FILTER_IPA_CHARS)
+            "default": u"letters",
+            "help": "Map only the specified IPA characters [%s] (default: 'letters')" % u"|".join(MappedPronunciationLexicon.FILTER_IPA_CHARS)
         },
         {
             "name": "--mapper",
             "nargs": "?",
             "type": str,
             "default": u"auto",
-            "help": "Map IPA chars using the specified mapper [arpabet|auto|kirshenbaum] (default: 'auto')"
+            "help": "Map IPA characters using the specified mapper [%s] (default: 'auto')" % u"|".join(MAPPERS)
         },
         {
             "name": "--comment",
@@ -86,11 +90,11 @@ class Trainer(CommandLineTool):
             "help": "Field index of the word (default: 0)"
         },
         {
-            "name": "--ipa-index",
+            "name": "--pron-index",
             "nargs": "?",
             "type": int,
             "default": 1,
-            "help": "Field index of the IPA string (default: 1)"
+            "help": "Field index of the pronunciation (default: 1)"
         },
         {
             "name": "--train-size-int",
@@ -153,15 +157,15 @@ class Trainer(CommandLineTool):
                 self.error("The output directory must exist. (Got: '%s')" % value)
         self.__output_directory_path = value
 
-    def _create_lexicon(self, lexicon_file_path, comment, delimiter, word_index, ipa_index):
-        self.lexicon = MappableLexicon()
+    def _create_lexicon(self, lexicon_file_path, comment, delimiter, word_index, pron_index, lowercase, chars):
+        self.lexicon = MappedPronunciationLexicon(lowercase=lowercase)
         self.lexicon.read_file(
             lexicon_file_path=lexicon_file_path,
             comment=comment,
             delimiter=delimiter,
-            word_index=word_index,
-            ipa_index=ipa_index
+            indices=[word_index, pron_index]
         )
+        self.lexicon.filter_chars(chars=chars)
 
     def _create_mapper(self, mapper_name):
         if mapper_name == u"kirshenbaum":
@@ -175,7 +179,7 @@ class Trainer(CommandLineTool):
             mapper = Mapper()
             # NOTE sorting by canonical representation ensures consistency of the symbol set
             #      across different tools (for the same input lexicon)
-            phones = sorted([p.canonical_representation for p in self.lexicon.filtered_phones])
+            phones = sorted([p.canonical_representation for p in self.lexicon.phones])
             for i, p in enumerate(phones):
                 # NOTE the key is a 1-element tuple: (canonical_repr, )
                 mapper[(p,)] = u"%03d" % (i + 1)
@@ -232,7 +236,7 @@ class Trainer(CommandLineTool):
         comment = self.vargs["comment"]
         delimiter = self.vargs["delimiter"]
         word_index = self.vargs["word_index"]
-        ipa_index = self.vargs["ipa_index"]
+        pron_index = self.vargs["pron_index"]
         
         # options to filter/format results
         lowercase = self.vargs["lowercase"]
@@ -250,6 +254,8 @@ class Trainer(CommandLineTool):
             self.error(u"The lexicon file must exist. (Got '%s')" % lexicon_file_path)
         if tool_name not in TOOLS:
             self.error(u"The available tools are: %s. (Got: '%s')" % (TOOLS.keys(), tool_name))
+        if mapper_name not in MAPPERS:
+            self.error(u"The available mappers are: %s. (Got: '%s')" % (MAPPERS, mapper_name))
         self.tool = TOOLS[tool_name]
         base = os.path.join(self.output_directory_path, os.path.basename(lexicon_file_path))
 
@@ -261,16 +267,12 @@ class Trainer(CommandLineTool):
             return
 
         # load lexicon
-        self._create_lexicon(lexicon_file_path, comment, delimiter, word_index, ipa_index)
-        if lowercase:
-            self.lexicon.lower()
-        # filter IPA characters
-        self.lexicon.filter_ipa_chars(chars)
+        self._create_lexicon(lexicon_file_path, comment, delimiter, word_index, pron_index, lowercase, chars)
         # create and apply mapper
         self._create_mapper(mapper_name)
-        self.lexicon.apply_mapper(self.mapper)
+        self.lexicon.apply_mapper(mapper=self.mapper)
         # generate train/test sets
-        self.lexicon.generate_sets(train_size=train_size)
+        self.lexicon.shuffle_and_partition(size=train_size, store=True)
         # create tool object
         self.tool = self.tool(
             lexicon=self.lexicon,
@@ -282,14 +284,21 @@ class Trainer(CommandLineTool):
         
         # output stats
         stats = []
-        stats.append("Words:")
-        stats.append("  Total: %d" % (self.lexicon.train_size + self.lexicon.test_size))
-        stats.append("  Train: %d" % self.lexicon.train_size)
-        stats.append("  Test:  %d" % self.lexicon.test_size)
-        stats.append("Symbols:")
-        stats.append("  Total: %d" % (self.lexicon.symbol_set_size))
-        stats.append("  Train: %d" % (self.lexicon.train_symbol_set_size))
-        stats.append("  Test:  %d" % (self.lexicon.test_symbol_set_size))
+        stats.append(u"Lexicon path:          %s" % lexicon_file_path)
+        stats.append(u"Output directory:      %s" % self.output_directory_path)
+        stats.append(u"Lowercase words:       %s" % lowercase)
+        stats.append(u"Map IPA characters:    %s" % chars)
+        stats.append(u"Mapper:                %s" % mapper_name)
+        stats.append(u"Tool:                  %s" % tool_name)
+        stats.append(u"Train size:            %s" % str(train_size))
+        stats.append(u"Words:")
+        stats.append(u"  Total: %d" % len(self.lexicon))
+        stats.append(u"  Train: %d" % len(self.lexicon.train_lexicon))
+        stats.append(u"  Test:  %d" % len(self.lexicon.test_lexicon))
+        stats.append(u"Symbols:")
+        stats.append(u"  Total: %d" % len(self.lexicon.symbols))
+        stats.append(u"  Train: %d" % len(self.lexicon.train_lexicon.symbols))
+        stats.append(u"  Test:  %d" % len(self.lexicon.test_lexicon.symbols))
         created_files.append(base + u".trainer_stats")
         write_file(stats, created_files[-1])
         

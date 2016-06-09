@@ -115,11 +115,11 @@ class Comparator(object):
 
     def words(self, in_lexicon1, in_lexicon2):
         if in_lexicon1 and in_lexicon2:
-            return set(self.lexicon1.words) & set(self.lexicon2.words)
+            return set(self.lexicon1.keys) & set(self.lexicon2.keys)
         if in_lexicon1 and not in_lexicon2:
-            return set(self.lexicon1.words) - set(self.lexicon2.words)
+            return set(self.lexicon1.keys) - set(self.lexicon2.keys)
         if in_lexicon2 and not in_lexicon1:
-            return set(self.lexicon2.words) - set(self.lexicon1.words)
+            return set(self.lexicon2.keys) - set(self.lexicon1.keys)
         return set() 
 
     def compare_sequences(self, word, p1, p2):
@@ -186,10 +186,10 @@ class Comparator(object):
         sta[u"phones_additions"] = 0
         sta[u"phones_deletions"] = 0
         for w in common:
-            e1 = self.lexicon1.entries_for_word(w)
-            e2 = self.lexicon2.entries_for_word(w)
+            e1 = self.lexicon1.entries_for_key(w)
+            e2 = self.lexicon2.entries_for_key(w)
             if compare_first_only:
-                r = self.compare_sequences(w, e1[0].phones, e2[0].phones)
+                r = self.compare_sequences(w, e1[0].value_as_sequence, e2[0].value_as_sequence)
                 sta[u"phones1"] += r.l1
                 sta[u"phones2"] += r.l2
                 sta[u"phones_correct"] += r.matches
@@ -232,7 +232,7 @@ class Comparator(object):
         if sort:
             words = sorted(words)
         else:
-            words = [w for w in self.lexicon1.words if w in self.words_in_common]
+            words = [w for w in self.lexicon1.keys if w in self.words_in_common]
         for w in words:
             c = self.comparisons[w]
             if (not diff_only) or (not c.equal):

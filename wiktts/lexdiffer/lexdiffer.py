@@ -13,7 +13,8 @@ from ipapy.ipastring import IPAString
 
 from wiktts import write_file
 from wiktts.commandlinetool import CommandLineTool
-from wiktts.lexdiffer.sequencelexicon import SequenceLexicon
+from wiktts.sequencelexicon import SequenceLexicon
+from wiktts.pronunciationlexicon import PronunciationLexicon
 from wiktts.lexdiffer.comparator import Comparator 
 
 __author__ = "Alberto Pettarin"
@@ -83,23 +84,11 @@ class LexDiffer(CommandLineTool):
         self.comparator = None
 
     def _create_lexica(self, lexicon1_file_path, lexicon2_file_path, ipa):
-        def field_to_ipa(string):
-            return IPAString(unicode_string=string).ipa_chars
-
-        self.lexicon1 = SequenceLexicon()
-        self.lexicon2 = SequenceLexicon()
-        if ipa:
-            self.lexicon1.read_file(
-                lexicon_file_path=lexicon1_file_path,
-                field_to_sequence_function=field_to_ipa
-            )
-            self.lexicon2.read_file(
-                lexicon_file_path=lexicon2_file_path,
-                field_to_sequence_function=field_to_ipa
-            )
-        else:
-            self.lexicon1.read_file(lexicon_file_path=lexicon1_file_path)
-            self.lexicon2.read_file(lexicon_file_path=lexicon2_file_path)
+        cls = PronunciationLexicon if ipa else SequenceLexicon
+        self.lexicon1 = cls()
+        self.lexicon1.read_file(lexicon_file_path=lexicon1_file_path)
+        self.lexicon2 = cls()
+        self.lexicon2.read_file(lexicon_file_path=lexicon2_file_path)
         self.comparator = Comparator(self.lexicon1, self.lexicon2)
 
     def actual_command(self):

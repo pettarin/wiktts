@@ -8,25 +8,30 @@ Prepare train/test/symbol files for ML tools.
 A UTF-8 encoded plain-text **clean+normalized lexicon file**,
 where each line represents a word.
 Each line should contain at least two fields,
-the word and the IPA string of its pronunciation,
+the word and its pronunciation,
 separated by a field separator character.
 Each line might contain additional fields.
 
 By default:
 * lines beginning with ``#`` (``U+0023 NUMBER SIGN``) are ignored;
 * the field separator is the tab character (``U+0009 TAB``); and
-* the word and IPA fields are the first and second fields of each line.
+* the word and pronunciation fields are the first and second fields of each line.
 
 You can change these defaults with the ``--comment``, ``--delimiter``, and
-``--word-index``/``--ipa-index`` parameters.
+``--word-index``/``--pron-index`` parameters.
 
 Currently, the following tools are supported:
 
 * [Sequitur](https://www-i6.informatik.rwth-aachen.de/web/Software/g2p.html)
 * [Phonetisaurus (latest commit on GitHub master)](https://github.com/AdolfVonKleist/Phonetisaurus)
-  (NOTE: the evaluation is based on code adapted from v0.8 and needs more work)
+  (NOTE: the "test" code has been adapted from the self-evaluation code in v0.8.
+  You might want to use ``wiktts.lexdiffer`` to compare e.g. the test (known) lexicon and
+  the results of the trained model applied to the same word list.)
 * [Phonetisaurus v0.8a](https://code.google.com/archive/p/phonetisaurus/)
-  (IMPORTANT NOTE: v0.8a does not seems to support UTF-8 encoded train/test files, they must be ASCII encoded files!)
+  (IMPORTANT NOTE: v0.8a does not seems to support UTF-8 encoded train/test files,
+  and only works for ASCII encoded files.
+  Hence, you might need to remove non-ASCII characters from the words in your lexicon
+  if you intend to use this version of Phonetisaurus.)
 
 
 ## Output
@@ -34,10 +39,27 @@ Currently, the following tools are supported:
 A set of files will be created in the given directory,
 with a syntax appropriate for the specified ML tool:
 
-* a **train set file**, used to train a ML model;
-* a **test set file**, used to test the trained ML model;
-* a **symbol file**, containing the map from Unicode IPA character to its ML symbol; and
+* a set of **train files**
+  (``.train``, ``.train.tab``, ``.train.words``, ``.train.symbols``),
+  used to train a ML model;
+* a set of **test files**
+  (``.test``, ``.test.tab``, ``.test.words``, ``.test.symbols``),
+  used to test the trained ML model;
+* a set of **lexicon files**,
+  (``.tab``, ``.words``, ``.symbols``),
+  not directly used in training/testing a ML model,
+  but that might be useful for later evaluation;
+* a **trainer statistics files** (``.trainer_stats``); and
 * a **Bash script** to train/test/apply the ML model.
+
+For the first three sets of files:
+
+* ``.tab`` contains the corrisponding lexicon, tab-separated
+  (format accepted by other tools like ``wiktts.lexdiffer``),
+  even if e.g. ``.train`` is space-separated;
+* ``.words`` contains only the words in the lexicon, one per line;
+* ``.symbols`` contains the mapping from symbol to IPA descriptors
+  used to create the train/test files.
 
 
 ## Usage
@@ -69,7 +91,7 @@ $ python -m wiktts.trainer --help
 
 usage: wiktts.trainer [-h] [--chars [CHARS]] [--mapper [MAPPER]]
                       [--comment [COMMENT]] [--delimiter [DELIMITER]]
-                      [--word-index [WORD_INDEX]] [--ipa-index [IPA_INDEX]]
+                      [--word-index [WORD_INDEX]] [--pron-index [PRON_INDEX]]
                       [--train-size-int [TRAIN_SIZE_INT]]
                       [--train-size-frac [TRAIN_SIZE_FRAC]] [--stats]
                       [--script-only]
@@ -86,10 +108,10 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  --chars [CHARS]       Output the IPA characters of specified type
-                        [all|cv|cvp|cvs|cvpl|cvsl|cvslw|cvslws] (default:
-                        'cv')
-  --mapper [MAPPER]     Map IPA chars using the specified mapper
+  --chars [CHARS]       Map only the specified IPA characters
+                        [all|letters|cvp|cvs|cvpl|cvsl|cvslw|cvslws] (default:
+                        'letters')
+  --mapper [MAPPER]     Map IPA characters using the specified mapper
                         [arpabet|auto|kirshenbaum] (default: 'auto')
   --comment [COMMENT]   Ignore lines in the lexicon file starting with this
                         string (default: '#')
@@ -97,8 +119,8 @@ optional arguments:
                         Field delimiter of the lexicon file (default: '\t')
   --word-index [WORD_INDEX]
                         Field index of the word (default: 0)
-  --ipa-index [IPA_INDEX]
-                        Field index of the IPA string (default: 1)
+  --pron-index [PRON_INDEX]
+                        Field index of the pronunciation (default: 1)
   --train-size-int [TRAIN_SIZE_INT]
                         Size of the train set, in words
   --train-size-frac [TRAIN_SIZE_FRAC]
@@ -115,17 +137,21 @@ optional arguments:
 
 ## Example
 
-Assuming a clean lexicon file ``enwiktionary-20160407.lex.clean`` exists:
+Assuming a clean lexicon file ``enwiktionary-20160407.lex.clean`` exists
+in the current working directory:
 
 ```bash
 $ python -m wiktts.trainer sequitur enwiktionary-20160407.lex.clean /tmp/
 
 Created file: /tmp/enwiktionary-20160407.lex.clean.train
+Created file: /tmp/enwiktionary-20160407.lex.clean.train.tab
 Created file: /tmp/enwiktionary-20160407.lex.clean.train.words
 Created file: /tmp/enwiktionary-20160407.lex.clean.train.symbols
 Created file: /tmp/enwiktionary-20160407.lex.clean.test
+Created file: /tmp/enwiktionary-20160407.lex.clean.test.tab
 Created file: /tmp/enwiktionary-20160407.lex.clean.test.words
 Created file: /tmp/enwiktionary-20160407.lex.clean.test.symbols
+Created file: /tmp/enwiktionary-20160407.lex.clean.tab
 Created file: /tmp/enwiktionary-20160407.lex.clean.words
 Created file: /tmp/enwiktionary-20160407.lex.clean.symbols
 Created file: /tmp/enwiktionary-20160407.lex.clean.trainer_stats
@@ -135,34 +161,35 @@ Created file: /tmp/run_sequitur.sh
 where the first lines of ``/tmp/enwiktionary-20160407.lex.clean.train`` look like:
 
 ```
-coelacanth 013 046 005 038 082 085 007 050
-sixths 013 092 082 013
-rorqual 014 024 014 082 017 038 005
-complexity 082 038 028 031 005 089 082 013 092 009 046
-Hannah 056 085 007 038
-colthood 082 038 090 005 009 056 090 008
-dinghy 008 092 069 081 046
-lidar 005 087 092 008 025 001
-broiler 030 001 026 092 005 038
+avgas 085 062 081 085 013
+cliquishly 082 005 046 082 092 079 005 046
+foresyllable 063 023 014 013 092 005 038 030 004
+matting 028 085 009 092 069
+declarator 008 089 082 005 038 001 048 092 009 038 001
+ever 089 062 038
+opisthokont 024 031 092 013 050 038 090 082 024 007 009
+silflay 013 092 005 063 005 048 092
+somehow 013 027 028 056 087 090
 ...
 ```
 
 and ``/tmp/enwiktionary-20160407.lex.clean.symbols`` has the symbol-to-IPA map:
 
 ```
-001	voiced alveolar approximant consonant	ɹ
-002	voiceless alveolar approximant consonant	ɹ̥
-003	voiced alveolar flap consonant	ɾ
-004	voiced alveolar lateral-approximant velarized consonant	lˠ
-005	voiced alveolar lateral-approximant consonant	l
-006	voiceless alveolar lateral-fricative consonant	ɬ
-007	voiced alveolar nasal consonant	n
-008	voiced alveolar plosive consonant	d
-009	voiceless alveolar plosive consonant	t
+001	voiced alveolar approximant consonant	(ɹ)
+002	voiceless alveolar approximant consonant	(ɹ̥)
+003	voiced alveolar flap consonant	(ɾ)
+004	voiced alveolar lateral-approximant velarized consonant	(lˠ)
+005	voiced alveolar lateral-approximant consonant	(l)
+006	voiceless alveolar lateral-fricative consonant	(ɬ)
+007	voiced alveolar nasal consonant	(n)
+008	voiced alveolar plosive consonant	(d)
+009	voiceless alveolar plosive consonant	(t)
 ...
 ```
 
-To create the Bash script only:
+If you just need to output the Bash script,
+the following command is faster:
 
 ```bash
 $ python -m wiktts.trainer sequitur enwiktionary-20160407.lex.clean /tmp/ --script-only
@@ -170,29 +197,27 @@ $ python -m wiktts.trainer sequitur enwiktionary-20160407.lex.clean /tmp/ --scri
 Created file: /tmp/run_sequitur.sh
 ```
 
-To print statistics:
+The ``--stats`` switch prints onstdout
+the statistics also saved into the ``.trainer_stats`` file:
 
 ```bash
 $ python -m wiktts.trainer sequitur enwiktionary-20160407.lex.clean /tmp/ --stats
-
-Created file: /tmp/enwiktionary-20160407.lex.clean.train
-Created file: /tmp/enwiktionary-20160407.lex.clean.train.words
-Created file: /tmp/enwiktionary-20160407.lex.clean.train.symbols
-Created file: /tmp/enwiktionary-20160407.lex.clean.test
-Created file: /tmp/enwiktionary-20160407.lex.clean.test.words
-Created file: /tmp/enwiktionary-20160407.lex.clean.test.symbols
-Created file: /tmp/enwiktionary-20160407.lex.clean.words
-Created file: /tmp/enwiktionary-20160407.lex.clean.symbols
-Created file: /tmp/enwiktionary-20160407.lex.clean.trainer_stats
-Created file: /tmp/run_sequitur.sh
+...
+Lexicon path:          enwiktionary-20160407.lex.clean
+Output directory:      /tmp/
+Lowercase words:       False
+Map IPA characters:    letters
+Mapper:                auto
+Tool:                  sequitur
+Train size:            0.9
 Words:
-  Total: 36954
-  Train: 33258
+  Total: 36952
+  Train: 33256
   Test:  3696
 Symbols:
   Total: 92
-  Train: 92
-  Test:  63
+  Train: 90
+  Test:  70
 ```
 
 To use the Kirshenbaum ASCII IPA mapper:
@@ -200,32 +225,44 @@ To use the Kirshenbaum ASCII IPA mapper:
 ```bash
 $ python -m wiktts.trainer sequitur enwiktionary-20160407.lex.clean /tmp/ --mapper kirshenbaum
 
-Created file: /tmp/enwiktionary-20160407.lex.clean.train
-Created file: /tmp/enwiktionary-20160407.lex.clean.train.words
-Created file: /tmp/enwiktionary-20160407.lex.clean.train.symbols
-Created file: /tmp/enwiktionary-20160407.lex.clean.test
-Created file: /tmp/enwiktionary-20160407.lex.clean.test.words
-Created file: /tmp/enwiktionary-20160407.lex.clean.test.symbols
-Created file: /tmp/enwiktionary-20160407.lex.clean.words
-Created file: /tmp/enwiktionary-20160407.lex.clean.symbols
-Created file: /tmp/enwiktionary-20160407.lex.clean.trainer_stats
-Created file: /tmp/run_sequitur.sh
+$ head -n 9 /tmp/enwiktionary-20160407.lex.clean.train
+
+Davidson d e I v I d s @ n
+abyssalrock @ b I s l r A. k
+affairs @ f E r z
+mimeo m I m I @ U
+oncology A. N k A. l @ dZ i
+definitely d E f I n I t l i
+schrecklichkeit S r<trl> E k l I C k a I t
+gas g & s
+grandducal g r & n d d j u k @ l
 ```
 
-where the first lines of ``/tmp/enwiktionary-20160407.lex.clean.train`` look like:
+By default, only consonants and vowels are mapped, and all the other IPA characters are ignored.
+You can change this behavior with the ``--chars`` switch.
+For example, ``cvpl`` will output letters, plus primary stress and long suprasegmentals:
 
-```
-zooplasty z o U @ p l & s t i
-duppy d V p i
-sedge s E dZ
-cinema s I n @ m A
-Ogham o U @ m
-pegs p E g z
-cen- s i n
-down d a U n
-pedication p E d I k e I S @ n
+```bash
+$ python -m wiktts.trainer sequitur enwiktionary-20160407.lex.clean /tmp/ --stats --chars cvpl 
 ...
+Lexicon path:          enwiktionary-20160407.lex.clean
+Output directory:      /tmp/
+Lowercase words:       False
+Map IPA characters:    cvpl
+Mapper:                auto
+Tool:                  sequitur
+Train size:            0.9
+Words:
+  Total: 36952
+  Train: 33256
+  Test:  3696
+Symbols:
+  Total: 94
+  Train: 94
+  Test:  67
 ```
+
+(Note how the total number of symbols went from 92 to 94.)
 
 
 

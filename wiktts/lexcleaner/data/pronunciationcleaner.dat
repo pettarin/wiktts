@@ -1,5 +1,5 @@
 #
-# UniCleaner IPA Data File
+# PronunciationCleaner IPA Data File
 #
 # Syntax:
 #   old,[new]
@@ -9,8 +9,8 @@
 #       - new is either empty or one or more Unicode codepoints (yyyy, yyyy_zzzz, etc.)
 #         (if empty, it means that old will be removed)
 #
-# Version: 0.0.4
-# Date:    2016-05-24
+# Version: 0.1.0
+# Date:    2016-06-06
 #
 
 ###############

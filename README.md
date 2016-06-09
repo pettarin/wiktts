@@ -2,8 +2,8 @@
 
 Mining MediaWiki dumps to create better TTS engines (using Machine Learning)
 
-* Version: 0.0.9
-* Date: 2016-06-01
+* Version: 0.1.0
+* Date: 2016-06-09
 * Developer: [Alberto Pettarin](http://www.albertopettarin.it/)
 * License: the MIT License (MIT)
 * Contact: [click here](http://www.albertopettarin.it/contact.html)
@@ -15,7 +15,7 @@ Code, tools, APIs, etc. are **subject to change without any further notice**.
 Use at your own risk, until v1.0.0 is released (and this notice disappears).
 Current TODO list:
 
-* write a tool to diff IPA/mapped lexica, including a "consider one of the two lexica as ground truth" switch
+* implement comparison with alternatives in lexdiffer
 * map eSpeak phones and/or create eSpeak voice from .symbol files
 
 
@@ -71,9 +71,10 @@ Possible **applications** include:
 This repository contains the following Python 2.7.x/3.5.x tools:
 
 * ``wiktts.mw.splitter`` split a [MediaWiki dump](https://dumps.wikimedia.org/backup-index.html) into chunks
-* ``wiktts.mw.miner``: mine [IPA](http://www.internationalphoneticassociation.org/) strings from a MediaWiki dump file
+* ``wiktts.mw.miner``: mine [IPA](http://www.internationalphoneticassociation.org/) pronunciation strings from a MediaWiki dump file
 * ``wiktts.lexcleaner``: clean+normalize a pronunciation lexicon
 * ``wiktts.trainer``: prepare train/test/symbol sets for ML tools (e.g., Phonetisaurus or Sequitur)
+* ``wiktts.lexdiffer``: compare two pronunciation/mapped lexica
 
 This project uses the sister ``ipapy`` Python module,
 available on [PyPI](https://pypi.python.org/pypi/ipapy)
@@ -146,6 +147,14 @@ $ python -m wiktts.trainer TOOL LEXICON OUTPUTDIR [OPTIONS]
 
 [Details](wiktts/trainer/README.md)
 
+### wiktts.lexdiffer
+
+```bash
+$ python -m wiktts.lexdiffer LEXICON1 LEXICON2 [OPTIONS]
+```
+
+[Details](wiktts/lexdiffer/README.md)
+
 
 ## Putting All Together 
 
@@ -201,7 +210,7 @@ Alberto Pettarin. wiktts [VERSION_YOU_USE]. https://github.com/pettarin/wiktts (
 For example:
 
 ```
-Alberto Pettarin. wiktts v0.0.9. https://github.com/pettarin/wiktts (last access: 2016-06-01).
+Alberto Pettarin. wiktts v0.1.0. https://github.com/pettarin/wiktts (last access: 2016-06-09).
 ```
 
 For a list of resources used to design and implement **wiktts**,
